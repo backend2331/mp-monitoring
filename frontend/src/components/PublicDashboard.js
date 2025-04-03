@@ -1,49 +1,57 @@
 import React, { useState, useEffect } from "react";
-import "../App.css"; // Ensure you import your global styles
+import { useNavigate } from "react-router-dom";
+import "../App.css";
 
 const PublicDashboard = () => {
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true); // Add loading state
-  const [error, setError] = useState(null); // Add error state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch("http://localhost:5000/api/projects")
       .then((response) => response.json())
       .then((data) => {
         setProjects(data);
-        setLoading(false); // Set loading to false once data is fetched
+        setLoading(false);
       })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
+      .catch((err) => {
+        console.error("Error fetching data:", err);
         setError("Failed to load projects");
-        setLoading(false); // Set loading to false in case of error
+        setLoading(false);
       });
   }, []);
 
-  // If data is still loading
   if (loading) {
     return <div>Loading projects...</div>;
   }
 
-  // If there's an error
   if (error) {
     return <div>{error}</div>;
   }
 
   return (
     <div className="container">
-      <h1>Public Dashboard</h1>
+      {/* Header with title and total projects count on the top right */}
+      <div className="header">
+        <h1>Public Dashboard</h1>
+        <div className="project-count">
+          <p>Total Projects: {projects.length}</p>
+        </div>
+      </div>
+      
       <p>Projects are visible here for public users.</p>
+      
       {projects.length === 0 ? (
         <p>No projects available.</p>
       ) : (
         <ul className="project-list">
-          {projects.map((project, index) => (
-            <li key={index} className="project-item">
-              <span className="project-title">{project.name}</span>
+          {projects.map((project) => (
+            <li key={project.id} className="project-item">
+              <h3 className="project-title">{project.title}</h3>
               <p className="project-description">{project.description}</p>
 
-              {/* Media Section for Images and Videos */}
+              {/* Media Section */}
               <div className="project-media">
                 {project.media && project.media.length > 0 ? (
                   project.media.map((media, idx) => (
@@ -60,7 +68,15 @@ const PublicDashboard = () => {
                 )}
               </div>
 
-              {/* No "Add Media" button for public view */}
+              {/* View Project Button */}
+              <div className="button-group">
+                <button
+                  className="action-btn"
+                  onClick={() => navigate(`/project/${project.id}`)}
+                >
+                  View Project
+                </button>
+              </div>
             </li>
           ))}
         </ul>
