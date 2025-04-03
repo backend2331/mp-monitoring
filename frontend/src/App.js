@@ -4,7 +4,7 @@ import LandingPage from "./components/LandingPage";
 import MPDashboard from "./components/MPDashboard";
 import PublicDashboard from "./components/PublicDashboard";
 import MPLogin from "./components/MPLogin";
-import ProjectDetails from "./components/ProjectDetails"; // Import ProjectDetails
+import ProjectDetails from "./components/ProjectDetails";
 
 function App() {
   return (
@@ -14,8 +14,8 @@ function App() {
         <Route path="/mp" element={<MPLogin />} />
         <Route path="/mp-dashboard" element={<MPDashboard />} />
         <Route path="/public" element={<PublicDashboard />} />
-        {/* Pass projects prop to ProjectDetails */}
-        <Route path="/project/:id" element={<ProjectDetails />} />
+        {/* Pass userRole="mp" so that the ProjectDetails page renders CRUD controls */}
+        <Route path="/project/:id" element={<ProjectDetails userRole="mp" />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

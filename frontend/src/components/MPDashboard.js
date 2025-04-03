@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // For navigation
+import { useNavigate } from "react-router-dom";
 import "../App.css";
 
 const MPDashboard = () => {
-  const [projects, setProjects] = useState([]); // Project list
-  const [loading, setLoading] = useState(true); // Loading state
-  const [error, setError] = useState(null); // Error state
-  const navigate = useNavigate(); // Navigation hook
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/projects") // Fetching projects from API
+    fetch("http://localhost:5000/api/projects")
       .then((response) => response.json())
       .then((data) => {
         setProjects(data);
@@ -29,7 +29,12 @@ const MPDashboard = () => {
     <div className="container">
       <div className="header">
         <h1>MP Monitoring Dashboard</h1>
-        {/* Optional: Add Project button if required */}
+        <button 
+          className="create-project-btn"
+          onClick={() => navigate("/create-project")}
+        >
+          Create Project
+        </button>
       </div>
       <div className="project-count">
         <p>Total Projects: {projects.length}</p>
@@ -42,7 +47,6 @@ const MPDashboard = () => {
             <li key={project.id} className="project-item">
               <h3 className="project-title">{project.title}</h3>
               <p className="project-description">{project.description}</p>
-              {/* View Project Button */}
               <div className="button-group">
                 <button
                   className="action-btn"

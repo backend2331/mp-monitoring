@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom"; // Removed unused "useNavigate"
+import { useParams } from "react-router-dom";
 import "../App.css";
 
 const ProjectDetails = ({ userRole }) => {
-  const { id } = useParams(); // Get project ID from the URL
-  const [project, setProject] = useState(null); // State for project details
-  const [loading, setLoading] = useState(true); // State for loading
-  const [error, setError] = useState(null); // State for errors
-  const [editMode, setEditMode] = useState(false); // Toggle for editing description
-  const [mediaComments, setMediaComments] = useState({}); // State for media comments
+  // Debug: log the userRole received from props
+  console.log("ProjectDetails userRole:", userRole);
 
-  // Fetch project details when the component loads
+  const { id } = useParams();
+  const [project, setProject] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [mediaComments, setMediaComments] = useState({});
+
   useEffect(() => {
     fetch(`http://localhost:5000/api/projects/${id}`)
       .then((response) => {
@@ -18,7 +20,6 @@ const ProjectDetails = ({ userRole }) => {
         return response.json();
       })
       .then((data) => {
-        // Set default values if necessary
         data.status = data.status || "In Progress";
         data.media = data.media || [];
         setProject(data);
@@ -31,7 +32,6 @@ const ProjectDetails = ({ userRole }) => {
       });
   }, [id]);
 
-  // Handle comments on media items
   const handleCommentChange = (index, value) => {
     setMediaComments((prev) => ({
       ...prev,
@@ -41,39 +41,36 @@ const ProjectDetails = ({ userRole }) => {
 
   const saveComment = (index) => {
     const updatedMedia = [...project.media];
-    updatedMedia[index].comment = mediaComments[index] || ""; // Update comment locally
-    setProject({ ...project, media: updatedMedia }); // Update project state
+    updatedMedia[index].comment = mediaComments[index] || "";
+    setProject({ ...project, media: updatedMedia });
     setMediaComments((prev) => ({
       ...prev,
-      [index]: "", // Clear the input field
+      [index]: "",
     }));
   };
 
-  // Placeholder backend actions
   const handleUpdateProject = () => {
     console.log("Update Project", project.id);
-    alert("Project update functionality needs to be connected to backend.");
+    alert("Project update functionality needs to be connected to the backend.");
   };
 
   const handleDeleteProject = () => {
     console.log("Delete Project", project.id);
-    alert("Project delete functionality needs to be connected to backend.");
-    // Example logic: Redirect to dashboard after deletion
-    // navigate("/mp-dashboard");
+    alert("Project delete functionality needs to be connected to the backend.");
   };
 
   const handleAddMedia = () => {
     console.log("Add Media", project.id);
-    alert("Add media functionality needs to be connected to backend.");
+    alert("Add media functionality needs to be connected to the backend.");
   };
 
   if (loading) return <div className="container">Loading project...</div>;
-  if (error) return <div className="container error">{error}</div>; // Display error message
+  if (error) return <div className="container error">{error}</div>;
   if (!project) return <div className="container">Project not found</div>;
 
   return (
     <div className="project-details-container">
-      {/* Header */}
+      {/* Header Area */}
       <div className="header">
         <h1>{project.title}</h1>
         <p>
@@ -81,7 +78,7 @@ const ProjectDetails = ({ userRole }) => {
         </p>
       </div>
 
-      {/* Project Overview */}
+      {/* Project Overview Section */}
       <div className="project-overview">
         <h2>Project Overview</h2>
         {editMode && userRole === "mp" ? (
@@ -104,7 +101,7 @@ const ProjectDetails = ({ userRole }) => {
         )}
       </div>
 
-      {/* Media Section */}
+      {/* Media and Reports Section */}
       <div className="project-media">
         <h2>Media Gallery</h2>
         {project.media.length > 0 ? (
@@ -144,7 +141,6 @@ const ProjectDetails = ({ userRole }) => {
         )}
       </div>
 
-      {/* Project Report */}
       <div className="project-report">
         <h2>Project Report</h2>
         {project.report_url ? (
@@ -159,7 +155,7 @@ const ProjectDetails = ({ userRole }) => {
         )}
       </div>
 
-      {/* CRUD Buttons for MPs */}
+      {/* CRUD Operations Panel: visible only for MPs */}
       {userRole === "mp" && (
         <div className="button-group">
           <button className="action-btn" onClick={handleUpdateProject}>
