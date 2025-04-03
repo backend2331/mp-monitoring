@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
+const path = require("path");
 
 const app = express();
 
@@ -9,12 +10,15 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Serve static files from the "uploads" folder
+app.use('/uploads', express.static(path.join(__dirname, "uploads")));
+
 // Database Connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// Route to test the server
+// Test route
 app.get("/", (req, res) => {
   res.send("MP Monitoring API is running...");
 });
@@ -25,7 +29,6 @@ app.use("/api/auth", authRoutes);
 
 const projectRoutes = require("./routes/projects");
 app.use("/api/projects", projectRoutes);
-
 
 // Start the server
 const PORT = process.env.PORT || 5000;

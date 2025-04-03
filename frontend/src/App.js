@@ -14,8 +14,10 @@ function App() {
         <Route path="/mp" element={<MPLogin />} />
         <Route path="/mp-dashboard" element={<MPDashboard />} />
         <Route path="/public" element={<PublicDashboard />} />
-        {/* Pass userRole="mp" so that the ProjectDetails page renders CRUD controls */}
-        <Route path="/project/:id" element={<ProjectDetails userRole="mp" />} />
+        {/* Public Detail View */}
+        <Route path="/project/:id" element={<ProjectDetails userRole="public" />} />
+        {/* MP Detail View */}
+        <Route path="/mp-project/:id" element={<ProjectDetails userRole="mp" />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

@@ -3,15 +3,15 @@ import { useParams } from "react-router-dom";
 import "../App.css";
 
 const ProjectDetails = ({ userRole }) => {
-  // Debug: log the userRole received from props
-  console.log("ProjectDetails userRole:", userRole);
-
+  console.log("ProjectDetails userRole:", userRole); // For debugging
   const { id } = useParams();
+
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [mediaComments, setMediaComments] = useState({});
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetch(`http://localhost:5000/api/projects/${id}`)
@@ -20,8 +20,8 @@ const ProjectDetails = ({ userRole }) => {
         return response.json();
       })
       .then((data) => {
+        data.media = data.media || []; // Ensure media exists
         data.status = data.status || "In Progress";
-        data.media = data.media || [];
         setProject(data);
         setLoading(false);
       })
@@ -49,59 +49,121 @@ const ProjectDetails = ({ userRole }) => {
     }));
   };
 
-  const handleUpdateProject = () => {
-    console.log("Update Project", project.id);
-    alert("Project update functionality needs to be connected to the backend.");
+  const handleUpdateProject = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/projects/update/${project.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: project.title,
+          description: project.description,
+          report_url: project.report_url,
+        }),
+      });
+
+      if (response.ok) {
+        alert("Project updated successfully!");
+      } else {
+        throw new Error("Failed to update project.");
+      }
+    } catch (error) {
+      console.error("Error updating project:", error);
+      alert("Failed to update project. Please try again.");
+    }
   };
 
-  const handleDeleteProject = () => {
-    console.log("Delete Project", project.id);
-    alert("Project delete functionality needs to be connected to the backend.");
+  const handleDeleteProject = async () => {
+    if (!window.confirm("Are you sure you want to delete this project?")) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/projects/delete/${project.id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        alert("Project deleted successfully!");
+      } else {
+        throw new Error("Failed to delete project.");
+      }
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      alert("Failed to delete project. Please try again.");
+    }
+  };
+
+  const handleFileUpload = async (file) => {
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("media", file);
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/projects/${project.id}/media`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Media upload failed");
+      }
+
+      const newMedia = await response.json();
+      setProject((prevProject) => ({
+        ...prevProject,
+        media: [...prevProject.media, newMedia],
+      }));
+      alert("Media uploaded successfully!");
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      alert("Failed to upload media.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleAddMedia = () => {
-    console.log("Add Media", project.id);
-    alert("Add media functionality needs to be connected to the backend.");
+    document.getElementById("mediaUploadInput").click();
   };
 
-  if (loading) return <div className="container">Loading project...</div>;
-  if (error) return <div className="container error">{error}</div>;
-  if (!project) return <div className="container">Project not found</div>;
+  if (loading) return <div>Loading project...</div>;
+  if (error) return <div>{error}</div>;
+  if (!project) return <div>Project not found</div>;
 
   return (
     <div className="project-details-container">
-      {/* Header Area */}
+      <input
+        type="file"
+        id="mediaUploadInput"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            handleFileUpload(e.target.files[0]);
+          }
+        }}
+      />
       <div className="header">
         <h1>{project.title}</h1>
         <p>
           Status: <strong>{project.status}</strong>
         </p>
       </div>
-
-      {/* Project Overview Section */}
       <div className="project-overview">
         <h2>Project Overview</h2>
         {editMode && userRole === "mp" ? (
           <textarea
             value={project.description}
-            onChange={(e) =>
-              setProject({ ...project, description: e.target.value })
-            }
+            onChange={(e) => setProject({ ...project, description: e.target.value })}
           />
         ) : (
           <p>{project.description}</p>
         )}
         {userRole === "mp" && (
-          <button
-            className="action-btn"
-            onClick={() => setEditMode(!editMode)}
-          >
+          <button className="action-btn" onClick={() => setEditMode(!editMode)}>
             {editMode ? "Save Description" : "Edit Description"}
           </button>
         )}
       </div>
-
-      {/* Media and Reports Section */}
       <div className="project-media">
         <h2>Media Gallery</h2>
         {project.media.length > 0 ? (
@@ -121,10 +183,7 @@ const ProjectDetails = ({ userRole }) => {
                     value={mediaComments[idx] || ""}
                     onChange={(e) => handleCommentChange(idx, e.target.value)}
                   />
-                  <button
-                    className="action-btn"
-                    onClick={() => saveComment(idx)}
-                  >
+                  <button className="action-btn" onClick={() => saveComment(idx)}>
                     Save Comment
                   </button>
                 </div>
@@ -136,26 +195,18 @@ const ProjectDetails = ({ userRole }) => {
         )}
         {userRole === "mp" && (
           <button className="action-btn" onClick={handleAddMedia}>
-            Add Media
+            {uploading ? "Uploading..." : "Add Media"}
           </button>
         )}
       </div>
-
       <div className="project-report">
         <h2>Project Report</h2>
         {project.report_url ? (
-          <embed
-            src={project.report_url}
-            width="100%"
-            height="600px"
-            type="application/pdf"
-          />
+          <embed src={project.report_url} width="100%" height="600px" type="application/pdf" />
         ) : (
           <p>No report available for this project.</p>
         )}
       </div>
-
-      {/* CRUD Operations Panel: visible only for MPs */}
       {userRole === "mp" && (
         <div className="button-group">
           <button className="action-btn" onClick={handleUpdateProject}>

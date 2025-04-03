@@ -160,24 +160,19 @@ h1 {
   .container {
     padding: 15px;
   }
-
   h1 {
     font-size: 24px;
   }
-
   .project-item {
     padding: 12px;
   }
-
   .create-project-btn {
     padding: 8px 16px;
   }
-
   .button-group {
     flex-direction: row;
     justify-content: flex-start;
   }
-
   .action-btn {
     padding: 6px 12px;
     font-size: 12px;
