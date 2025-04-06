@@ -5,6 +5,7 @@ import MPDashboard from "./components/MPDashboard";
 import PublicDashboard from "./components/PublicDashboard";
 import MPLogin from "./components/MPLogin";
 import ProjectDetails from "./components/ProjectDetails";
+import CreateProject from "./components/CreateProject"; // Import your new component
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/mp" element={<MPLogin />} />
         <Route path="/mp-dashboard" element={<MPDashboard />} />
         <Route path="/public" element={<PublicDashboard />} />
+        <Route path="/create-project" element={<CreateProject />} /> {/* New route */}
         {/* Public Detail View */}
         <Route path="/project/:id" element={<ProjectDetails userRole="public" />} />
         {/* MP Detail View */}

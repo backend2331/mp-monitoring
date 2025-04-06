@@ -4,8 +4,10 @@ import "../App.css";
 
 const PublicDashboard = () => {
   const [projects, setProjects] = useState([]);
+  const [filteredProjects, setFilteredProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,6 +22,7 @@ const PublicDashboard = () => {
           throw new Error("Expected an array of projects");
         }
         setProjects(data);
+        setFilteredProjects(data);
       } catch (err) {
         console.error("Error fetching projects:", err);
         setError(err.message);
@@ -30,6 +33,13 @@ const PublicDashboard = () => {
     fetchProjects();
   }, []);
 
+  const handleSearch = () => {
+    const filtered = projects.filter((project) =>
+      project.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredProjects(filtered);
+  };
+
   if (loading) return <div>Loading projects...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -37,39 +47,60 @@ const PublicDashboard = () => {
     <div className="container">
       <div className="header">
         <h1>Public Dashboard</h1>
-        <p>Total Projects: {projects.length}</p>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "10px 0" }}>
+          <input
+            type="text"
+            placeholder="Search by project title"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: "8px",
+              width: "250px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+            }}
+          />
+          <button className="action-btn" onClick={handleSearch}>
+            Search
+          </button>
+        </div>
+        <p>Total Projects: {filteredProjects.length}</p>
       </div>
-      {projects.length === 0 ? (
+
+      {filteredProjects.length === 0 ? (
         <p>No projects available.</p>
       ) : (
         <ul className="project-list">
-          {projects.map((project, index) => (
-            <li key={project.id} className="project-item">
-              <h3 className="project-number">Project Number: {index + 1}</h3>
-              <h3 className="project-title">{project.title}</h3>
-              <p className="project-description">{project.description}</p>
-              <div className="project-media">
-                {project.media && project.media.length > 0 ? (
-                  project.media.map((media, idx) => (
-                    <div key={idx} className="media-item">
-                      {media.type === "image" ? (
-                        <img src={media.url} alt="project media" />
-                      ) : media.type === "video" ? (
-                        <video src={media.url} controls />
-                      ) : null}
+          {filteredProjects.map((project, index) => {
+            const firstImage = project.media?.find((m) => m.type === "image");
+
+            return (
+              <li key={project.id} className="project-item">
+                <h3 className="project-number">Project ID: {project.id}</h3>
+                <h3 className="project-title">{project.title}</h3>
+                <p className="project-description">{project.description}</p>
+
+                <div className="project-media">
+                  {firstImage ? (
+                    <div className="media-item">
+                      <img src={firstImage.url} alt="Project media" />
                     </div>
-                  ))
-                ) : (
-                  <p>No media available for this project.</p>
-                )}
-              </div>
-              <div className="button-group">
-                <button className="action-btn" onClick={() => navigate(`/project/${project.id}`)}>
-                  View Project
-                </button>
-              </div>
-            </li>
-          ))}
+                  ) : (
+                    <p>No image available for this project.</p>
+                  )}
+                </div>
+
+                <div className="button-group">
+                  <button
+                    className="action-btn"
+                    onClick={() => navigate(`/project/${project.id}`)}
+                  >
+                    View Project
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

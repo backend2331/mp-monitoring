@@ -24,6 +24,7 @@ const ProjectDetails = ({ userRole }) => {
       .then((data) => {
         data.media = data.media || [];
         data.status = data.status || "ongoing";
+        data.reports = data.reports || []; // ensure reports array
         setLocalProject({ ...data });
         setLocalMedia([...data.media]);
         setLoading(false);
@@ -58,8 +59,7 @@ const ProjectDetails = ({ userRole }) => {
 
   const deleteMedia = (index) => {
     if (window.confirm("Are you sure you want to delete this media?")) {
-      const updated = localMedia.filter((_, idx) => idx !== index);
-      setLocalMedia(updated);
+      setLocalMedia(localMedia.filter((_, idx) => idx !== index));
     }
   };
 
@@ -76,40 +76,54 @@ const ProjectDetails = ({ userRole }) => {
       const newMedia = await response.json();
       setLocalMedia((prev) => [...prev, newMedia]);
       alert("Media uploaded successfully!");
-    } catch (error) {
-      console.error("Error uploading media:", error);
+    } catch {
       alert("Failed to upload media.");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleAddMedia = () => {
-    document.getElementById("mediaUploadInput").click();
-  };
+  const handleAddMedia = () => document.getElementById("mediaUploadInput").click();
+  const handleStatusChange = (e) => handleFieldChange("status", e.target.value);
 
-  const handleStatusChange = (e) => {
-    handleFieldChange("status", e.target.value);
-  };
-
-  const handleReportUpload = async (file) => {
+  const handleAddReport = async (file) => {
     setReportUploading(true);
     const formData = new FormData();
     formData.append("report", file);
     try {
-      const response = await fetch(`http://localhost:5000/api/projects/${localProject.id}/report`, {
+      const response = await fetch(`http://localhost:5000/api/projects/${localProject.id}/reports`, {
         method: "POST",
         body: formData,
       });
       if (!response.ok) throw new Error("Report upload failed");
-      const data = await response.json();
-      setLocalProject((prev) => ({ ...prev, report_url: data.report_url }));
-      alert("Report uploaded successfully!");
-    } catch (error) {
-      console.error("Error uploading report:", error);
-      alert("Failed to upload report.");
+      const newReport = await response.json();
+      setLocalProject((prev) => ({
+        ...prev,
+        reports: [...prev.reports, newReport],
+      }));
+      alert("Report added successfully!");
+    } catch {
+      alert("Failed to add report.");
     } finally {
       setReportUploading(false);
+    }
+  };
+
+  const handleDeleteReport = async (reportId) => {
+    if (!window.confirm("Are you sure you want to delete this report?")) return;
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/projects/${localProject.id}/reports/${reportId}`,
+        { method: "DELETE" }
+      );
+      if (!response.ok) throw new Error();
+      setLocalProject((prev) => ({
+        ...prev,
+        reports: prev.reports.filter((r) => r.id !== reportId),
+      }));
+      alert("Report deleted successfully!");
+    } catch {
+      alert("Failed to delete report.");
     }
   };
 
@@ -122,38 +136,43 @@ const ProjectDetails = ({ userRole }) => {
         body: JSON.stringify({
           title: localProject.title,
           description: localProject.description,
-          report_url: localProject.report_url,
           status: localProject.status,
           media: localMedia,
+          // reports are managed separately
         }),
       });
-      if (!response.ok) throw new Error("Failed to update project.");
+      if (!response.ok) throw new Error();
       alert("Project updated successfully!");
       const updatedResponse = await fetch(`http://localhost:5000/api/projects/${localProject.id}`);
       if (updatedResponse.ok) {
         const updatedData = await updatedResponse.json();
         updatedData.media = updatedData.media || [];
+        updatedData.reports = updatedData.reports || [];
         setLocalProject({ ...updatedData });
         setLocalMedia([...updatedData.media]);
       }
-    } catch (error) {
-      console.error("Error updating project:", error);
-      alert("Failed to update project. Please try again.");
+    } catch {
+      alert("Failed to update project.");
     }
   };
 
+  // Updated delete function that navigates to the appropriate dashboard.
   const handleDeleteProject = async () => {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/projects/delete/${localProject.id}`, {
+      const response = await fetch(`http://localhost:5000/api/projects/${localProject.id}`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error("Failed to delete project.");
+      if (!response.ok) throw new Error();
       alert("Project deleted successfully!");
-      navigate("/");
-    } catch (error) {
-      console.error("Error deleting project:", error);
-      alert("Failed to delete project. Please try again.");
+      // Navigate based on user role
+      if (userRole === "mp") {
+        navigate("/mp-dashboard");
+      } else {
+        navigate("/public-dashboard");
+      }
+    } catch {
+      alert("Failed to delete project.");
     }
   };
 
@@ -167,23 +186,16 @@ const ProjectDetails = ({ userRole }) => {
         type="file"
         id="mediaUploadInput"
         style={{ display: "none" }}
-        onChange={(e) => {
-          if (e.target.files && e.target.files[0]) {
-            handleFileUpload(e.target.files[0]);
-          }
-        }}
+        onChange={e => handleFileUpload(e.target.files[0])}
       />
       <input
         type="file"
         id="reportUploadInput"
         accept="application/pdf"
         style={{ display: "none" }}
-        onChange={(e) => {
-          if (e.target.files && e.target.files[0]) {
-            handleReportUpload(e.target.files[0]);
-          }
-        }}
+        onChange={e => handleAddReport(e.target.files[0])}
       />
+
       <div className="header">
         <h1>{localProject.title}</h1>
         {userRole === "mp" ? (
@@ -195,17 +207,16 @@ const ProjectDetails = ({ userRole }) => {
             </select>
           </div>
         ) : (
-          <p>
-            Status: <strong>{localProject.status}</strong>
-          </p>
+          <p>Status: <strong>{localProject.status}</strong></p>
         )}
       </div>
+
       <div className="project-overview">
         <h2>Project Overview</h2>
         {editMode && userRole === "mp" ? (
           <textarea
             value={localProject.description}
-            onChange={(e) => handleFieldChange("description", e.target.value)}
+            onChange={e => handleFieldChange("description", e.target.value)}
           />
         ) : (
           <p>{localProject.description}</p>
@@ -216,28 +227,25 @@ const ProjectDetails = ({ userRole }) => {
           </button>
         )}
       </div>
+
       <div className="project-media">
         <h2>Media Gallery</h2>
         {localMedia.length > 0 ? (
           localMedia.map((media, idx) => (
             <div key={idx} className="media-item">
               {media.type === "image" ? (
-                <img src={media.url} alt={`Media ${idx}`} />
-              ) : media.type === "video" ? (
+                <img src={media.url} alt="" />
+              ) : (
                 <video src={media.url} controls />
-              ) : null}
+              )}
               <div className="media-comment">
                 <p>Comment: {media.comment || "No comment"}</p>
                 {userRole === "mp" && (
                   <>
                     <textarea
-                      placeholder="Add or update comment..."
-                      value={
-                        mediaComments[idx] !== undefined
-                          ? mediaComments[idx]
-                          : media.comment || ""
-                      }
-                      onChange={(e) => handleCommentChange(idx, e.target.value)}
+                      placeholder="Comment..."
+                      value={mediaComments[idx] ?? media.comment}
+                      onChange={e => handleCommentChange(idx, e.target.value)}
                     />
                     <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
                       <button className="action-btn" onClick={() => saveComment(idx)}>
@@ -256,47 +264,60 @@ const ProjectDetails = ({ userRole }) => {
             </div>
           ))
         ) : (
-          <p>No media available for this project.</p>
+          <p>No media available.</p>
         )}
         {userRole === "mp" && (
-          <div style={{ marginTop: "16px", display: "flex", gap: "10px" }}>
+          <div style={{ marginTop: "16px" }}>
             <button className="action-btn" onClick={handleAddMedia}>
               {uploading ? "Uploading..." : "Add Media"}
             </button>
           </div>
         )}
       </div>
+
       <div className="project-report">
-        <h2>Project Report</h2>
-        {localProject.report_url ? (
-          <div>
-            <embed src={localProject.report_url} width="100%" height="600px" type="application/pdf" />
-            <p>
-              <a href={localProject.report_url} target="_blank" rel="noopener noreferrer" download>
-                Download Report
+        <h2>Project Reports</h2>
+        {localProject.reports.length > 0 ? (
+          localProject.reports.map((report) => (
+            <div key={report.id} className="report-item">
+              <a href={report.url} target="_blank" rel="noopener noreferrer">
+                View Report
               </a>
-            </p>
-          </div>
+              {userRole === "mp" && (
+                <button
+                  className="action-btn"
+                  onClick={() => handleDeleteReport(report.id)}
+                  style={{ marginLeft: "10px" }}
+                >
+                  Delete Report
+                </button>
+              )}
+            </div>
+          ))
         ) : (
-          <p>No report available for this project.</p>
+          <p>No reports available.</p>
         )}
         {userRole === "mp" && (
-          <div style={{ marginTop: "16px" }}>
-            <button
-              className="action-btn"
-              onClick={() => document.getElementById("reportUploadInput").click()}
-            >
-              {reportUploading ? "Uploading Report..." : "Upload/Replace Report"}
-            </button>
-          </div>
+          <button
+            className="action-btn"
+            style={{ marginTop: "10px" }}
+            onClick={() => document.getElementById("reportUploadInput").click()}
+          >
+            {reportUploading ? "Uploading..." : "Add Report"}
+          </button>
         )}
       </div>
+
       {userRole === "mp" && (
         <div className="button-group">
           <button className="action-btn" onClick={handleUpdateProject}>
             Update Project
           </button>
-          <button className="action-btn" onClick={handleDeleteProject}>
+          <button
+            className="action-btn"
+            style={{ backgroundColor: "red", borderColor: "red" }}
+            onClick={handleDeleteProject}
+          >
             Delete Project
           </button>
         </div>

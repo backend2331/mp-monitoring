@@ -4,8 +4,10 @@ import "../App.css";
 
 const MPDashboard = () => {
   const [projects, setProjects] = useState([]);
+  const [filteredProjects, setFilteredProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,6 +22,7 @@ const MPDashboard = () => {
           throw new Error("Expected an array of projects");
         }
         setProjects(data);
+        setFilteredProjects(data); // initialize
       } catch (err) {
         console.error("Error fetching projects:", err);
         setError(err.message);
@@ -30,6 +33,13 @@ const MPDashboard = () => {
     fetchProjects();
   }, []);
 
+  const handleSearch = () => {
+    const filtered = projects.filter((project) =>
+      project.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredProjects(filtered);
+  };
+
   if (loading) return <div>Loading projects...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -37,18 +47,42 @@ const MPDashboard = () => {
     <div className="container">
       <div className="header">
         <h1>MP Monitoring Dashboard</h1>
-        <button className="create-project-btn" onClick={() => navigate("/create-project")}>
-          Create Project
-        </button>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "20px" }}>
+          <input
+            type="text"
+            placeholder="Search by project title"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: "8px",
+              width: "250px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+            }}
+          />
+          <button className="action-btn" onClick={handleSearch}>
+            Search
+          </button>
+          <button
+            className="action-btn"
+            style={{ marginLeft: "auto" }}
+            onClick={() => navigate("/create-project")}
+          >
+            Create Project
+          </button>
+        </div>
       </div>
-      <p>Total Projects: {projects.length}</p>
-      {projects.length === 0 ? (
+
+      <p>Total Projects: {filteredProjects.length}</p>
+
+      {filteredProjects.length === 0 ? (
         <p>No projects available.</p>
       ) : (
         <ul className="project-list">
-          {projects.map((project, index) => (
+          {filteredProjects.map((project, index) => (
             <li key={project.id} className="project-item">
-              <h3 className="project-number">Project Number: {index + 1}</h3>
+              <h3 className="project-number">Project ID: {project.id}</h3>
               <h3 className="project-title">{project.title}</h3>
               <p className="project-description">{project.description}</p>
               <div className="button-group">

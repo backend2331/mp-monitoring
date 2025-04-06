@@ -155,26 +155,100 @@ h1 {
   background-color: #004085;
 }
 
+/* Secondary Action Button */
+.action-btn.secondary {
+  background-color: #6c757d;
+}
+
+.action-btn.secondary:hover {
+  background-color: #5a6268;
+}
+
+/* Form Layout for CreateProject */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.half {
+  flex: 1;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.form-textarea {
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Report Section */
+.report-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {
     padding: 15px;
   }
+
   h1 {
     font-size: 24px;
   }
+
   .project-item {
     padding: 12px;
   }
+
   .create-project-btn {
     padding: 8px 16px;
   }
+
   .button-group {
     flex-direction: row;
     justify-content: flex-start;
   }
+
   .action-btn {
     padding: 6px 12px;
     font-size: 12px;
   }
+
+  /* Form adjustments */
+  .form-row {
+    flex-direction: column;
+  }
+}
+
+.delete-btn {
+  background-color: red;
+  border: 1px solid red;
+  color: white;
 }

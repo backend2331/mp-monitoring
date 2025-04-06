@@ -11,7 +11,7 @@ const pool = new Pool({
 // Set up multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/"); // make sure this folder exists
+    cb(null, "uploads/"); // ensure this folder exists
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -19,17 +19,32 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// GET all projects - returns media as a combined array of images and videos
+// ─── Create Project ─────────────────────────────────────────────────────────────
+router.post("/", async (req, res) => {
+  const { title, description, status, reports, created_by, constituency } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO projects
+        (title, description, status, reports, created_by, constituency)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [title, description, status, reports, created_by, constituency]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error creating project:", error);
+    res.status(500).json({ error: "Failed to create project" });
+  }
+});
+
+// ─── GET all projects ───────────────────────────────────────────────────────────
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM projects ORDER BY id ASC");
     const projects = result.rows.map((project) => {
       const images = project.image_urls || [];
       const videos = project.video_urls || [];
-      return {
-        ...project,
-        media: [...images, ...videos],
-      };
+      return { ...project, media: [...images, ...videos] };
     });
     res.json(projects);
   } catch (error) {
@@ -38,17 +53,14 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET a single project by id - returns media as a combined array
+// ─── GET a single project by id ────────────────────────────────────────────────
 router.get("/:id", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM projects WHERE id = $1", [req.params.id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Project not found" });
-    }
+    if (!result.rows.length) return res.status(404).json({ error: "Project not found" });
     const project = result.rows[0];
-    const images = project.image_urls || [];
-    const videos = project.video_urls || [];
-    project.media = [...images, ...videos];
+    project.media = [...(project.image_urls || []), ...(project.video_urls || [])];
+    project.reports = project.reports || [];
     res.json(project);
   } catch (error) {
     console.error("Error fetching project:", error);
@@ -56,54 +68,83 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// POST media upload endpoint for a project
+// ─── POST media upload ──────────────────────────────────────────────────────────
 router.post("/:id/media", upload.single("media"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-
     const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-    const mediaType = req.file.mimetype.startsWith("image/")
-      ? "image"
-      : req.file.mimetype.startsWith("video/")
-      ? "video"
-      : "unknown";
-
+    const mediaType = req.file.mimetype.startsWith("image/") ? "image" : "video";
     const newMedia = { url: fileUrl, type: mediaType, comment: "" };
-
-    if (mediaType === "image") {
-      await pool.query(
-        "UPDATE projects SET image_urls = COALESCE(image_urls, '[]'::jsonb) || $1::jsonb WHERE id = $2",
-        [JSON.stringify([newMedia]), req.params.id]
-      );
-    } else if (mediaType === "video") {
-      await pool.query(
-        "UPDATE projects SET video_urls = COALESCE(video_urls, '[]'::jsonb) || $1::jsonb WHERE id = $2",
-        [JSON.stringify([newMedia]), req.params.id]
-      );
-    }
-
-    res.status(200).json(newMedia);
+    const column = mediaType === "image" ? "image_urls" : "video_urls";
+    await pool.query(
+      `UPDATE projects
+         SET ${column} = COALESCE(${column}, '[]'::jsonb) || $1::jsonb
+       WHERE id = $2`,
+      [JSON.stringify([newMedia]), req.params.id]
+    );
+    res.json(newMedia);
   } catch (error) {
     console.error("Error uploading media:", error);
     res.status(500).json({ error: "Failed to upload media" });
   }
 });
 
-// PUT route to update project details (including status and media comments)
+// ─── POST add a new report ─────────────────────────────────────────────────────
+router.post("/:id/reports", upload.single("report"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No report file uploaded" });
+    const reportUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    const newReport = { id: Date.now(), url: reportUrl };
+    await pool.query(
+      `UPDATE projects
+         SET reports = COALESCE(reports, '[]'::jsonb) || $1::jsonb
+       WHERE id = $2`,
+      [JSON.stringify([newReport]), req.params.id]
+    );
+    res.json(newReport);
+  } catch (error) {
+    console.error("Error uploading report:", error);
+    res.status(500).json({ error: "Failed to upload report" });
+  }
+});
+
+// ─── DELETE a specific report ───────────────────────────────────────────────────
+router.delete("/:id/reports/:reportId", async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const reportId = parseInt(req.params.reportId, 10);
+    const result = await pool.query("SELECT reports FROM projects WHERE id = $1", [projectId]);
+    if (!result.rows.length) return res.status(404).json({ error: "Project not found" });
+    const reports = result.rows[0].reports || [];
+    const updated = reports.filter((r) => r.id !== reportId);
+    await pool.query("UPDATE projects SET reports = $1 WHERE id = $2", [JSON.stringify(updated), projectId]);
+    res.json({ success: true, message: "Report deleted" });
+  } catch (error) {
+    console.error("Error deleting report:", error);
+    res.status(500).json({ error: "Failed to delete report" });
+  }
+});
+
+// ─── PUT update project details ────────────────────────────────────────────────
 router.put("/:id", async (req, res) => {
-  const { title, description, report_url, status, media } = req.body;
+  const { title, description, reports, status, media } = req.body;
   try {
     if (media) {
       const images = media.filter((m) => m.type === "image");
       const videos = media.filter((m) => m.type === "video");
       await pool.query(
-        "UPDATE projects SET title = $1, description = $2, report_url = $3, status = $4, image_urls = $5, video_urls = $6 WHERE id = $7",
-        [title, description, report_url, status, JSON.stringify(images), JSON.stringify(videos), req.params.id]
+        `UPDATE projects
+           SET title=$1, description=$2, reports=$3, status=$4,
+               image_urls=$5, video_urls=$6
+         WHERE id=$7`,
+        [title, description, reports, status, JSON.stringify(images), JSON.stringify(videos), req.params.id]
       );
     } else {
       await pool.query(
-        "UPDATE projects SET title = $1, description = $2, report_url = $3, status = $4 WHERE id = $5",
-        [title, description, report_url, status, req.params.id]
+        `UPDATE projects
+           SET title=$1, description=$2, reports=$3, status=$4
+         WHERE id=$5`,
+        [title, description, reports, status, req.params.id]
       );
     }
     res.json({ success: true, message: "Project updated successfully" });
@@ -113,48 +154,15 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// ✅ NEW: POST report upload endpoint
-router.post("/:id/reports", upload.single("report"), async (req, res) => {
+// ─── DELETE a project by ID ────────────────────────────────────────────────
+router.delete("/:id", async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: "No report file uploaded" });
-
-    const reportUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-    const newReport = { id: Date.now(), url: reportUrl };
-
-    await pool.query(
-      "UPDATE projects SET report_urls = COALESCE(report_urls, '[]'::jsonb) || $1::jsonb WHERE id = $2",
-      [JSON.stringify([newReport]), req.params.id]
-    );
-
-    res.status(200).json(newReport);
+    const result = await pool.query("DELETE FROM projects WHERE id = $1 RETURNING *", [req.params.id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: "Project not found" });
+    res.json({ success: true, message: "Project deleted successfully" });
   } catch (error) {
-    console.error("Error uploading report:", error);
-    res.status(500).json({ error: "Failed to upload report" });
-  }
-});
-
-// ✅ NEW: DELETE a specific report by ID
-router.delete("/:id/reports/:reportId", async (req, res) => {
-  try {
-    const { id, reportId } = req.params;
-    const result = await pool.query("SELECT report_urls FROM projects WHERE id = $1", [id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Project not found" });
-    }
-
-    const currentReports = result.rows[0].report_urls || [];
-    const updatedReports = currentReports.filter((r) => r.id !== parseInt(reportId));
-
-    await pool.query(
-      "UPDATE projects SET report_urls = $1 WHERE id = $2",
-      [JSON.stringify(updatedReports), id]
-    );
-
-    res.status(200).json({ success: true, message: "Report removed" });
-  } catch (error) {
-    console.error("Error deleting report:", error);
-    res.status(500).json({ error: "Failed to delete report" });
+    console.error("Error deleting project:", error);
+    res.status(500).json({ error: "Failed to delete project" });
   }
 });
 
