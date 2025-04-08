@@ -35,7 +35,12 @@ app.use("/api/projects", projectRoutes);
 
 // Catch-all route to serve React's index.html (must be last)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
+  const indexPath = path.join(__dirname, "../frontend/build", "index.html");
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      res.status(500).send("Error loading the React app.");
+    }
+  });
 });
 
 // Start the server
