@@ -16,7 +16,7 @@ const ProjectDetails = ({ userRole }) => {
   const [reportUploading, setReportUploading] = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/projects/${id}`)
+    fetch(`/api/projects/${id}`)
       .then((response) => {
         if (!response.ok) throw new Error("Project not found");
         return response.json();
@@ -68,7 +68,7 @@ const ProjectDetails = ({ userRole }) => {
     const formData = new FormData();
     formData.append("media", file);
     try {
-      const response = await fetch(`http://localhost:5000/api/projects/${localProject.id}/media`, {
+      const response = await fetch(`/api/projects/${localProject.id}/media`, {
         method: "POST",
         body: formData,
       });
@@ -91,7 +91,7 @@ const ProjectDetails = ({ userRole }) => {
     const formData = new FormData();
     formData.append("report", file);
     try {
-      const response = await fetch(`http://localhost:5000/api/projects/${localProject.id}/reports`, {
+      const response = await fetch(`/api/projects/${localProject.id}/reports`, {
         method: "POST",
         body: formData,
       });
@@ -113,7 +113,7 @@ const ProjectDetails = ({ userRole }) => {
     if (!window.confirm("Are you sure you want to delete this report?")) return;
     try {
       const response = await fetch(
-        `http://localhost:5000/api/projects/${localProject.id}/reports/${reportId}`,
+        `/api/projects/${localProject.id}/reports/${reportId}`,
         { method: "DELETE" }
       );
       if (!response.ok) throw new Error();
@@ -130,7 +130,7 @@ const ProjectDetails = ({ userRole }) => {
   const handleUpdateProject = async () => {
     if (!window.confirm("Are you sure you want to update this project?")) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/projects/${localProject.id}`, {
+      const response = await fetch(`/api/projects/${localProject.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -143,7 +143,7 @@ const ProjectDetails = ({ userRole }) => {
       });
       if (!response.ok) throw new Error();
       alert("Project updated successfully!");
-      const updatedResponse = await fetch(`http://localhost:5000/api/projects/${localProject.id}`);
+      const updatedResponse = await fetch(`/api/projects/${localProject.id}`);
       if (updatedResponse.ok) {
         const updatedData = await updatedResponse.json();
         updatedData.media = updatedData.media || [];
@@ -156,11 +156,10 @@ const ProjectDetails = ({ userRole }) => {
     }
   };
 
-  // Updated delete function that navigates to the appropriate dashboard.
   const handleDeleteProject = async () => {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/projects/${localProject.id}`, {
+      const response = await fetch(`/api/projects/${localProject.id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error();

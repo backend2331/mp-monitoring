@@ -13,7 +13,7 @@ const MPDashboard = () => {
   useEffect(() => {
     async function fetchProjects() {
       try {
-        const response = await fetch("http://localhost:5000/api/projects");
+        const response = await fetch("/api/projects"); // Replaced hardcoded localhost with a relative URL
         if (!response.ok) {
           throw new Error(`Network response was not ok: ${response.statusText}`);
         }
