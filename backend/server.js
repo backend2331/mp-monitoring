@@ -16,11 +16,6 @@ app.use('/uploads', express.static(path.join(__dirname, "uploads")));
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, "../frontend/build")));
 
-// Catch-all route to serve index.html for React routes
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
-});
-
 // Database Connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -37,6 +32,11 @@ app.use("/api/auth", authRoutes);
 
 const projectRoutes = require("./routes/projects");
 app.use("/api/projects", projectRoutes);
+
+// Catch-all route to serve React's index.html (must be last)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
+});
 
 // Start the server
 const PORT = process.env.PORT || 5000;
