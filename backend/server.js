@@ -13,6 +13,14 @@ app.use(cors());
 // Serve static files from the "uploads" folder
 app.use('/uploads', express.static(path.join(__dirname, "uploads")));
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, "../frontend/build")));
+
+// Catch-all route to serve index.html for React routes
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
+});
+
 // Database Connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
