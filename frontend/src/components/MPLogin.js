@@ -7,18 +7,33 @@ const MPLogin = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-
-    // For production, replace this with a secure API call.
-    // For testing, ensure a user is stored in localStorage.
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (storedUser && storedUser.username === username && storedUser.password === password) {
-      navigate("/mp-dashboard");
-    } else {
-      setError("Invalid username or password");
+  
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username, password })
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        // Optional: save user/token if needed
+        localStorage.setItem("user", JSON.stringify(data.user));
+        navigate("/mp-dashboard");
+      } else {
+        setError(data.message || "Invalid username or password");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("An error occurred. Please try again later.");
     }
   };
+  
 
   return (
     <div style={styles.container}>

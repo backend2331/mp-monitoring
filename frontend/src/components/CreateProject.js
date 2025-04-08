@@ -20,7 +20,6 @@ const CreateProject = () => {
           title,
           description,
           status,
-          created_by: 1,       // replace with real MP ID
           constituency,
         }),
       });
