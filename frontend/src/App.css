@@ -213,6 +213,26 @@ h1 {
   margin-bottom: 8px;
 }
 
+/* New Responsive Dashboard Controls */
+.dashboard-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.create-btn {
+  margin-left: auto; /* Pushes button to the end on wider screens */
+}
+
+/* On small screens, remove margin-left so buttons appear centered */
+@media (max-width: 600px) {
+  .create-btn {
+    margin-left: 0;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {

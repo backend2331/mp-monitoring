@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(cors());
 
 // Serve static files from the "uploads" folder
-app.use('/uploads', express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, "../frontend/build")));
@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
 
 // Import Routes
 const authRoutes = require("./routes/auth");
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRoutes); // Mount the authRoutes at /api/auth
 
 const projectRoutes = require("./routes/projects");
 app.use("/api/projects", projectRoutes);
@@ -38,11 +38,14 @@ app.get("*", (req, res) => {
   const indexPath = path.join(__dirname, "../frontend/build", "index.html");
   res.sendFile(indexPath, (err) => {
     if (err) {
+      console.error("Error serving React app:", err);
       res.status(500).send("Error loading the React app.");
     }
   });
 });
 
-// Start the server
+// Start the server with better error handling
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});

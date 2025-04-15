@@ -48,7 +48,8 @@ const MPDashboard = () => {
       <div className="header">
         <h1>MP Monitoring Dashboard</h1>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "20px" }}>
+        {/* Use the new CSS class for responsive control buttons */}
+        <div className="dashboard-controls">
           <input
             type="text"
             placeholder="Search by project title"
@@ -65,8 +66,7 @@ const MPDashboard = () => {
             Search
           </button>
           <button
-            className="action-btn"
-            style={{ marginLeft: "auto" }}
+            className="action-btn create-btn"
             onClick={() => navigate("/create-project")}
           >
             Create Project
@@ -80,7 +80,7 @@ const MPDashboard = () => {
         <p>No projects available.</p>
       ) : (
         <ul className="project-list">
-          {filteredProjects.map((project, index) => (
+          {filteredProjects.map((project) => (
             <li key={project.id} className="project-item">
               <h3 className="project-number">Project ID: {project.id}</h3>
               <h3 className="project-title">{project.title}</h3>

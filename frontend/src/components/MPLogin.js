@@ -11,7 +11,7 @@ const MPLogin = () => {
     e.preventDefault();
   
     try {
-      const response = await fetch("/api/projects", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

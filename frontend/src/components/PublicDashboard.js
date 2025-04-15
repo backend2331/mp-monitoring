@@ -47,7 +47,16 @@ const PublicDashboard = () => {
     <div className="container">
       <div className="header">
         <h1>Public Dashboard</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "10px 0" }}>
+        {/* Updated the search container to wrap on small screens */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "10px",
+            margin: "10px 0",
+          }}
+        >
           <input
             type="text"
             placeholder="Search by project title"
@@ -71,7 +80,7 @@ const PublicDashboard = () => {
         <p>No projects available.</p>
       ) : (
         <ul className="project-list">
-          {filteredProjects.map((project, index) => {
+          {filteredProjects.map((project) => {
             const firstImage = project.media?.find((m) => m.type === "image");
 
             return (
