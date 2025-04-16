@@ -87,25 +87,29 @@ const ProjectDetails = ({ userRole }) => {
   const handleStatusChange = (e) => handleFieldChange("status", e.target.value);
 
   const handleAddReport = async (file) => {
-    setReportUploading(true);
     const formData = new FormData();
-    formData.append("report", file);
+    formData.append("newReports", file);
+    formData.append("title", localProject.title); // Include title
+    formData.append("description", localProject.description); // Include description
+    formData.append("status", localProject.status); // Include status
+    formData.append("fileName", file.name); // Include the original file name
+
     try {
-      const response = await fetch(`/api/projects/${localProject.id}/reports`, {
-        method: "POST",
+      const response = await fetch(`/api/projects/${localProject.id}`, {
+        method: "PUT",
         body: formData,
       });
-      if (!response.ok) throw new Error("Report upload failed");
-      const newReport = await response.json();
-      setLocalProject((prev) => ({
-        ...prev,
-        reports: [...prev.reports, newReport],
-      }));
+
+      if (!response.ok) {
+        throw new Error("Failed to upload report");
+      }
+
+      const updatedProject = await response.json();
+      setLocalProject(updatedProject); // Update the project state with the new report
       alert("Report added successfully!");
-    } catch {
-      alert("Failed to add report.");
-    } finally {
-      setReportUploading(false);
+    } catch (error) {
+      console.error("Error uploading report:", error);
+      alert("Failed to add report");
     }
   };
 
@@ -129,6 +133,7 @@ const ProjectDetails = ({ userRole }) => {
 
   const handleUpdateProject = async () => {
     if (!window.confirm("Are you sure you want to update this project?")) return;
+
     try {
       const response = await fetch(`/api/projects/${localProject.id}`, {
         method: "PUT",
@@ -137,12 +142,16 @@ const ProjectDetails = ({ userRole }) => {
           title: localProject.title,
           description: localProject.description,
           status: localProject.status,
-          media: localMedia,
-          // reports are managed separately
+          media: localMedia, // Include updated media
+          reports: localProject.reports, // Include updated reports
         }),
       });
-      if (!response.ok) throw new Error();
+
+      if (!response.ok) throw new Error("Failed to update project");
+
       alert("Project updated successfully!");
+
+      // Fetch the updated project data to refresh the UI
       const updatedResponse = await fetch(`/api/projects/${localProject.id}`);
       if (updatedResponse.ok) {
         const updatedData = await updatedResponse.json();
@@ -151,7 +160,8 @@ const ProjectDetails = ({ userRole }) => {
         setLocalProject({ ...updatedData });
         setLocalMedia([...updatedData.media]);
       }
-    } catch {
+    } catch (error) {
+      console.error("Error updating project:", error);
       alert("Failed to update project.");
     }
   };
@@ -172,6 +182,25 @@ const ProjectDetails = ({ userRole }) => {
       }
     } catch {
       alert("Failed to delete project.");
+    }
+  };
+
+  const handleDeleteMedia = async (mediaId) => {
+    if (!window.confirm("Are you sure you want to delete this media?")) return;
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}/media/${mediaId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete media");
+
+      alert("Media deleted successfully!");
+      // Refresh the media list after deletion
+      fetchProjectDetails();
+    } catch (error) {
+      console.error("Error deleting media:", error);
+      alert("Failed to delete media.");
     }
   };
 
@@ -279,8 +308,13 @@ const ProjectDetails = ({ userRole }) => {
         {localProject.reports.length > 0 ? (
           localProject.reports.map((report) => (
             <div key={report.id} className="report-item">
-              <a href={report.url} target="_blank" rel="noopener noreferrer">
-                View Report
+              <a
+                href={`/api/projects/${localProject.id}/reports/${report.id}/download`}
+                download={report.fileName} // Optional, but ensures the correct file name
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {report.fileName || "View Report"}
               </a>
               {userRole === "mp" && (
                 <button
@@ -297,13 +331,28 @@ const ProjectDetails = ({ userRole }) => {
           <p>No reports available.</p>
         )}
         {userRole === "mp" && (
-          <button
-            className="action-btn"
-            style={{ marginTop: "10px" }}
-            onClick={() => document.getElementById("reportUploadInput").click()}
-          >
-            {reportUploading ? "Uploading..." : "Add Report"}
-          </button>
+          <div style={{ marginTop: "10px" }}>
+            <button
+              className="action-btn"
+              onClick={() => document.getElementById("reportUploadInput").click()}
+            >
+              {reportUploading ? "Uploading..." : "Add Report"}
+            </button>
+            <input
+              type="file"
+              id="reportUploadInput"
+              accept=".pdf"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file && file.type === "application/pdf") {
+                  handleAddReport(file);
+                } else {
+                  alert("Invalid file type. Please upload a PDF file.");
+                }
+              }}
+            />
+          </div>
         )}
       </div>
 
