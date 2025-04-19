@@ -20,8 +20,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const allowedMimes = ["application/pdf", "image/jpeg", "image/png", "image/gif"]; // Add image MIME types
-
+const allowedMimes = ["application/pdf", "image/jpeg", "image/png", "image/gif"];
 const fileFilter = (req, file, cb) => {
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
@@ -31,6 +30,7 @@ const fileFilter = (req, file, cb) => {
 };
 const uploadMemory = multer({ storage: multer.memoryStorage(), fileFilter });
 
+// Create a new project
 router.post("/", async (req, res) => {
   const { title, description, status, constituency, image_urls, video_urls, reports } = req.body;
   try {
@@ -55,6 +55,7 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Fetch all projects
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM projects ORDER BY id ASC");
@@ -69,6 +70,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Fetch a single project
 router.get("/:id", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM projects WHERE id = $1", [req.params.id]);
@@ -82,20 +84,21 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Upload a new media file (image or video)
 router.post("/:id/media", uploadMemory.single("media"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const mediaType = req.file.mimetype.startsWith("image/") ? "image" : "video";
     const folder = mediaType === "image" ? "project_media" : "project_videos";
-
-    // Sanitize the original file name to remove spaces and special characters
-    const sanitizedFileName = path.parse(req.file.originalname).name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_-]/g, "");
+    const sanitizedFileName = path.parse(req.file.originalname)
+      .name.replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9_-]/g, "");
 
     cloudinary.uploader.upload_stream(
       {
         folder,
-        public_id: sanitizedFileName, // Use the sanitized original file name
+        public_id: sanitizedFileName,
         resource_type: mediaType === "image" ? "image" : "video",
       },
       async (err, result) => {
@@ -124,18 +127,17 @@ router.post("/:id/media", uploadMemory.single("media"), async (req, res) => {
   }
 });
 
+// Update a project (including new reports)
 router.put("/:id", uploadMemory.array("newReports"), async (req, res) => {
   const { id } = req.params;
   const { title, description, status, media, reports } = req.body;
 
-  // Validate the id parameter
   if (!id || isNaN(parseInt(id, 10))) {
     return res.status(400).json({ error: "Invalid project ID" });
   }
 
   let uploadedReports = [];
   try {
-    // Handle new report uploads
     if (req.files && req.files.length > 0) {
       uploadedReports = await Promise.all(
         req.files.map((file) => {
@@ -148,7 +150,7 @@ router.put("/:id", uploadMemory.array("newReports"), async (req, res) => {
                 folder: "project_reports",
                 resource_type: "raw",
                 format: "pdf",
-                type: "upload", // make it public
+                type: "upload",
                 public_id: path.parse(file.originalname).name.replace(/\s+/g, "_"),
               },
               (err, result) => {
@@ -167,16 +169,12 @@ router.put("/:id", uploadMemory.array("newReports"), async (req, res) => {
       );
     }
 
-    // Fetch existing project data
     const existing = await pool.query("SELECT * FROM projects WHERE id = $1", [id]);
-    if (!existing.rows.length) {
-      return res.status(404).json({ error: "Project not found" });
-    }
+    if (!existing.rows.length) return res.status(404).json({ error: "Project not found" });
 
     const existingReports = existing.rows[0].reports || [];
     const finalReports = [...existingReports, ...uploadedReports];
 
-    // Update the project with all fields
     await pool.query(
       `UPDATE projects
        SET title = $1, description = $2, status = $3, image_urls = $4, video_urls = $5, reports = $6
@@ -199,6 +197,7 @@ router.put("/:id", uploadMemory.array("newReports"), async (req, res) => {
   }
 });
 
+// Delete a report
 router.delete("/:id/reports/:reportId", async (req, res) => {
   try {
     const { id, reportId } = req.params;
@@ -207,17 +206,16 @@ router.delete("/:id/reports/:reportId", async (req, res) => {
       return res.status(400).json({ error: "Invalid report ID" });
     }
     const result = await pool.query("SELECT reports FROM projects WHERE id = $1", [id]);
-    if (!result.rows.length) {
-      return res.status(404).json({ error: "Project not found" });
-    }
+    if (!result.rows.length) return res.status(404).json({ error: "Project not found" });
+
     const reports = result.rows[0].reports || [];
     const reportToDelete = reports.find((r) => r.id === parsedReportId);
-    if (!reportToDelete) {
-      return res.status(404).json({ error: "Report not found" });
-    }
+    if (!reportToDelete) return res.status(404).json({ error: "Report not found" });
+
     if (reportToDelete.public_id) {
       await cloudinary.uploader.destroy(reportToDelete.public_id, { resource_type: "raw" });
     }
+
     const updatedReports = reports.filter((r) => r.id !== parsedReportId);
     await pool.query("UPDATE projects SET reports = $1 WHERE id = $2", [
       JSON.stringify(updatedReports),
@@ -230,43 +228,48 @@ router.delete("/:id/reports/:reportId", async (req, res) => {
   }
 });
 
-router.delete("/:id/media/:mediaId", async (req, res) => {
+// ---- UPDATED Delete Media route (Fix #2) ----
+router.delete("/:id/media", async (req, res) => {
   try {
-    const { id, mediaId } = req.params;
+    const { id } = req.params;
+    const { public_id } = req.body;             // receive the Cloudinary public_id in the body
+
+    console.log("Deleting media with public_id:", public_id);
 
     // Fetch the project to get the media details
-    const result = await pool.query("SELECT image_urls, video_urls FROM projects WHERE id = $1", [id]);
+    const result = await pool.query(
+      "SELECT image_urls, video_urls FROM projects WHERE id = $1",
+      [id]
+    );
     if (!result.rows.length) {
       return res.status(404).json({ error: "Project not found" });
     }
 
     const { image_urls = [], video_urls = [] } = result.rows[0];
-
-    // Find the media to delete
     const allMedia = [...image_urls, ...video_urls];
-    const mediaToDelete = allMedia.find((media) => media.public_id === mediaId);
+    const mediaToDelete = allMedia.find((m) => m.public_id === public_id);
 
     if (!mediaToDelete) {
       return res.status(404).json({ error: "Media not found" });
     }
 
-    console.log(`Deleting media with public_id: ${mediaToDelete.public_id}, type: ${mediaToDelete.type}`);
-
-    // Delete the media from Cloudinary
-    const cloudinaryResponse = await cloudinary.uploader.destroy(mediaToDelete.public_id, {
-      resource_type: mediaToDelete.type === "image" ? "image" : "video",
-    });
-
-    console.log("Cloudinary response:", cloudinaryResponse);
-
-    if (cloudinaryResponse.result !== "ok" && cloudinaryResponse.result !== "not found") {
+    // Delete from Cloudinary
+    const cloudinaryResponse = await cloudinary.uploader.destroy(
+      mediaToDelete.public_id,
+      {
+        resource_type: mediaToDelete.type === "image" ? "image" : "video",
+      }
+    );
+    if (
+      cloudinaryResponse.result !== "ok" &&
+      cloudinaryResponse.result !== "not found"
+    ) {
       return res.status(500).json({ error: "Failed to delete media from Cloudinary" });
     }
 
-    // Remove the media from the database
-    const updatedImageUrls = image_urls.filter((media) => media.public_id !== mediaId);
-    const updatedVideoUrls = video_urls.filter((media) => media.public_id !== mediaId);
-
+    // Remove from DB
+    const updatedImageUrls = image_urls.filter((m) => m.public_id !== public_id);
+    const updatedVideoUrls = video_urls.filter((m) => m.public_id !== public_id);
     await pool.query(
       `UPDATE projects
        SET image_urls = $1, video_urls = $2
@@ -281,18 +284,19 @@ router.delete("/:id/media/:mediaId", async (req, res) => {
   }
 });
 
+// Download a report
 router.get("/:id/reports/:reportId/download", async (req, res) => {
   try {
     const { id, reportId } = req.params;
     const result = await pool.query("SELECT reports FROM projects WHERE id = $1", [id]);
     if (!result.rows.length) return res.status(404).json({ error: "Project not found" });
+
     const reports = result.rows[0].reports || [];
     const report = reports.find((r) => r.id === parseInt(reportId, 10));
     if (!report) return res.status(404).json({ error: "Report not found" });
 
-    const directDownloadUrl = report.url; // already includes fl_attachment
+    const directDownloadUrl = report.url; // includes fl_attachment
     const response = await axios.get(directDownloadUrl, { responseType: "stream" });
-
     if (response.status !== 200) {
       return res.status(500).json({ error: "Failed to download file" });
     }
@@ -306,6 +310,7 @@ router.get("/:id/reports/:reportId/download", async (req, res) => {
   }
 });
 
+// Serve static uploads
 router.use("/uploads/reports", express.static(path.join(uploadsDir, "reports")));
 
 module.exports = router;
