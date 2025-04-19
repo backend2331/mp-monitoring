@@ -138,6 +138,7 @@ router.put("/:id", uploadMemory.array("newReports"), async (req, res) => {
 
   let uploadedReports = [];
   try {
+    // Check if files are uploaded
     if (req.files && req.files.length > 0) {
       uploadedReports = await Promise.all(
         req.files.map((file) => {
@@ -148,7 +149,7 @@ router.put("/:id", uploadMemory.array("newReports"), async (req, res) => {
             const uploadStream = cloudinary.uploader.upload_stream(
               {
                 folder: "project_reports",
-                resource_type: "raw",
+                resource_type: "raw", // Ensure this is set for PDFs
                 format: "pdf",
                 type: "upload",
                 public_id: path.parse(file.originalname).name.replace(/\s+/g, "_"),
@@ -169,12 +170,14 @@ router.put("/:id", uploadMemory.array("newReports"), async (req, res) => {
       );
     }
 
+    // Fetch the existing project
     const existing = await pool.query("SELECT * FROM projects WHERE id = $1", [id]);
     if (!existing.rows.length) return res.status(404).json({ error: "Project not found" });
 
     const existingReports = existing.rows[0].reports || [];
     const finalReports = [...existingReports, ...uploadedReports];
 
+    // Update the project in the database
     await pool.query(
       `UPDATE projects
        SET title = $1, description = $2, status = $3, image_urls = $4, video_urls = $5, reports = $6

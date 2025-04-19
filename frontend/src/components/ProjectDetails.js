@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import "../App.css";
 
 const ProjectDetails = ({ userRole }) => {
-  const { id } = useParams();
+  const { id: projectId } = useParams();
   const navigate = useNavigate();
 
   const [localProject, setLocalProject] = useState(null);
@@ -16,27 +16,23 @@ const ProjectDetails = ({ userRole }) => {
   const [uploading, setUploading] = useState(false);
   const [reportUploading, setReportUploading] = useState(false);
 
-  // Wrap in useCallback to avoid missing dependency warning
   const fetchProjectDetails = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); // Start loading
     try {
-      const response = await fetch(`/api/projects/${id}`);
-      if (!response.ok) throw new Error("Project not found");
-      const data = await response.json();
-      data.media = data.media || [];
-      data.status = data.status || "ongoing";
-      data.reports = data.reports || [];
-      setLocalProject(data);
-      setLocalMedia(data.media);
+      const response = await fetch(`/api/projects/${projectId}`);
+      if (!response.ok) throw new Error("Failed to fetch project details");
+      const project = await response.json();
+      setLocalProject(project);
+      setLocalMedia(project.media || []);
+      setError(null); // Clear any previous errors
     } catch (err) {
-      console.error("Error fetching project:", err);
-      setError("Failed to load project. Please try again later.");
+      console.error("Error fetching project details:", err);
+      setError("Failed to load project details.");
     } finally {
-      setLoading(false);
+      setLoading(false); // Stop loading
     }
-  }, [id]);
+  }, [projectId]);
 
-  // Call fetchProjectDetails whenever it or its dependencies change
   useEffect(() => {
     fetchProjectDetails();
   }, [fetchProjectDetails]);
@@ -86,57 +82,70 @@ const ProjectDetails = ({ userRole }) => {
   const handleAddMedia = () => document.getElementById("mediaUploadInput").click();
   const handleStatusChange = e => handleFieldChange("status", e.target.value);
 
-  const handleAddReport = async file => {
+  const handleAddReport = async (file) => {
     setReportUploading(true);
     const formData = new FormData();
-    formData.append("projectId", localProject.id);
     formData.append("newReports", file);
     formData.append("title", localProject.title);
     formData.append("description", localProject.description);
     formData.append("status", localProject.status);
-    formData.append("fileName", file.name);
 
     try {
-      const response = await fetch(`/api/projects/reports`, {
+      const response = await fetch(`/api/projects/${localProject.id}`, {
         method: "PUT",
         body: formData,
       });
-      if (!response.ok) throw new Error("Failed to upload report");
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to upload report");
+      }
+
       const updatedProject = await response.json();
-      setLocalProject(updatedProject);
+      setLocalProject((prev) => ({
+        ...prev,
+        ...updatedProject, // Ensure the `id` and other fields are updated
+      }));
       alert("Report added successfully!");
     } catch (err) {
       console.error("Error uploading report:", err);
-      alert("Failed to add report");
+      alert("Failed to upload report. Please try again.");
     } finally {
       setReportUploading(false);
     }
   };
 
-  const handleDeleteReport = async reportId => {
+  const handleDeleteReport = async (reportId) => {
     if (!window.confirm("Are you sure you want to delete this report?")) return;
+
     try {
-      const response = await fetch(
-        `/api/projects/${localProject.id}/reports/${reportId}`,
-        { method: "DELETE" }
-      );
-      if (!response.ok) throw new Error();
-      setLocalProject(prev => ({
+      const response = await fetch(`/api/projects/${localProject.id}/reports/${reportId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete report");
+
+      // Remove the deleted report from the local state
+      setLocalProject((prev) => ({
         ...prev,
-        reports: prev.reports.filter(r => r.id !== reportId)
+        reports: prev.reports.filter((report) => report.id !== reportId),
       }));
+
       alert("Report deleted successfully!");
     } catch (err) {
-      console.error(err);
-      alert("Failed to delete report.");
+      console.error("Error deleting report:", err);
+      alert("Failed to delete report. Please try again.");
     }
   };
 
   const handleUpdateProject = async () => {
-    console.log("🔄 Update clicked", { localProject, localMedia });
-  
+    if (!localProject?.id) {
+      alert("Project ID is missing. Please refresh the page and try again.");
+      return;
+    }
+
     if (!window.confirm("Are you sure you want to update this project?")) return;
-  
+
     try {
       const response = await fetch(`/api/projects/${localProject.id}`, {
         method: "PUT",
@@ -149,28 +158,19 @@ const ProjectDetails = ({ userRole }) => {
           reports: localProject.reports,
         }),
       });
-  
-      const text = await response.text();
-  
+
       if (!response.ok) {
-        console.error("❌ Server error:", response.status, text);
-        alert("❌ Failed to update project.\n\n" + text);
-        return;
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to update project");
       }
-  
-      console.log("✅ Update success:", text);
+
       alert("✅ Project updated successfully!");
       await fetchProjectDetails();
-  
     } catch (err) {
       console.error("❌ Network error:", err);
-      alert("❌ Network error. Check console for details.");
+      alert("❌ Failed to update project. Please try again.");
     }
   };
-  
-  
-  
-  
 
   const handleDeleteProject = async () => {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
@@ -189,23 +189,17 @@ const ProjectDetails = ({ userRole }) => {
 
   const handleDeleteMedia = async publicId => {
     if (!window.confirm("Are you sure you want to delete this media?")) return;
-    console.log("Deleting media with public_id:", publicId);
     try {
       const response = await fetch(
         `/api/projects/${localProject.id}/media`,
         {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ public_id: publicId })
+          body: JSON.stringify({ public_id: publicId }),
         }
       );
-      console.log("API response:", response);
       if (!response.ok) throw new Error("Failed to delete media");
       setLocalMedia(prev => prev.filter(m => m.public_id !== publicId));
-      setLocalProject(prev => ({
-        ...prev,
-        media: prev.media.filter(m => m.public_id !== publicId),
-      }));
       alert("Media deleted successfully!");
     } catch (err) {
       console.error("Error deleting media:", err);
