@@ -20,7 +20,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const allowedMimes = ["application/pdf", "image/jpeg", "image/png", "image/gif"];
+const allowedMimes = ["application/pdf", "image/jpeg", "image/png", "image/gif", "video/mp4", "video/avi"];
 const fileFilter = (req, file, cb) => {
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
@@ -234,7 +234,7 @@ router.delete("/:id/media", async (req, res) => {
     const { id } = req.params;
     const { public_id } = req.body;             // receive the Cloudinary public_id in the body
 
-    console.log("Deleting media with public_id:", public_id);
+  
 
     // Fetch the project to get the media details
     const result = await pool.query(
