@@ -3,15 +3,12 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "concurrently \"npm run dev --prefix backend\" \"npm start --prefix frontend\""
+    "start": "node backend/server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
-  "devDependencies": {
-    "concurrently": "^9.1.2"
-  },
   "engines": {
     "node": "18.x"
   }

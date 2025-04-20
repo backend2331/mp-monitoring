@@ -20,7 +20,7 @@ async function createAdmin() {
       [username, hashedPassword, role]
     );
 
-    console.log("✅ Admin user created:", result.rows[0]);
+    //console.log("✅ Admin user created:", result.rows[0]);
   } catch (error) {
     console.error("❌ Error creating admin:", error.message);
   } finally {
