@@ -26,6 +26,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// Trust proxy
+app.set('trust proxy', 1);
+
 // Database Connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
