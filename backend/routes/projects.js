@@ -287,10 +287,50 @@ router.delete("/:id/media", async (req, res) => {
   }
 });
 
+// Delete a project
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch the project to get associated media and reports
+    const result = await pool.query("SELECT image_urls, video_urls, reports FROM projects WHERE id = $1", [id]);
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    const { image_urls = [], video_urls = [], reports = [] } = result.rows[0];
+
+    // Delete media from Cloudinary
+    const allMedia = [...image_urls, ...video_urls];
+    for (const media of allMedia) {
+      await cloudinary.uploader.destroy(media.public_id, {
+        resource_type: media.type === "image" ? "image" : "video",
+      });
+    }
+
+    // Delete reports from Cloudinary
+    for (const report of reports) {
+      if (report.public_id) {
+        await cloudinary.uploader.destroy(report.public_id, { resource_type: "raw" });
+      }
+    }
+
+    // Delete the project from the database
+    await pool.query("DELETE FROM projects WHERE id = $1", [id]);
+
+    res.json({ success: true, message: "Project and associated resources deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting project:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Download a report
 router.get("/:id/reports/:reportId/download", async (req, res) => {
   try {
     const { id, reportId } = req.params;
+
+    // Fetch the project and reports
     const result = await pool.query("SELECT reports FROM projects WHERE id = $1", [id]);
     if (!result.rows.length) return res.status(404).json({ error: "Project not found" });
 
@@ -298,12 +338,14 @@ router.get("/:id/reports/:reportId/download", async (req, res) => {
     const report = reports.find((r) => r.id === parseInt(reportId, 10));
     if (!report) return res.status(404).json({ error: "Report not found" });
 
-    const directDownloadUrl = report.url; // includes fl_attachment
-    const response = await axios.get(directDownloadUrl, { responseType: "stream" });
+    // Fetch the file from Cloudinary
+    const response = await axios.get(report.url, { responseType: "stream" });
+
     if (response.status !== 200) {
-      return res.status(500).json({ error: "Failed to download file" });
+      return res.status(404).json({ error: "File not found on Cloudinary" });
     }
 
+    // Set headers and pipe the file to the client
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${report.fileName}"`);
     response.data.pipe(res);

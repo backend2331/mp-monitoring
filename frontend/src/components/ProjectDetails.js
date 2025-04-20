@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../App.css";
 
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
+
 const ProjectDetails = ({ userRole }) => {
   const { id: projectId } = useParams();
   const navigate = useNavigate();
@@ -19,7 +21,7 @@ const ProjectDetails = ({ userRole }) => {
   const fetchProjectDetails = useCallback(async () => {
     setLoading(true); // Start loading
     try {
-      const response = await fetch(`/api/projects/${projectId}`);
+      const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}`);
       if (!response.ok) throw new Error("Failed to fetch project details");
       const project = await response.json();
       setLocalProject(project);
@@ -42,34 +44,34 @@ const ProjectDetails = ({ userRole }) => {
   };
 
   const handleCommentChange = (index, value) => {
-    setMediaComments(prev => ({ ...prev, [index]: value }));
+    setMediaComments((prev) => ({ ...prev, [index]: value }));
   };
 
-  const saveComment = index => {
+  const saveComment = (index) => {
     const updated = [...localMedia];
     updated[index].comment = mediaComments[index] || "";
     setLocalMedia(updated);
-    setMediaComments(prev => ({ ...prev, [index]: "" }));
+    setMediaComments((prev) => ({ ...prev, [index]: "" }));
   };
 
-  const deleteComment = index => {
+  const deleteComment = (index) => {
     const updated = [...localMedia];
     updated[index].comment = "";
     setLocalMedia(updated);
   };
 
-  const handleFileUpload = async file => {
+  const handleFileUpload = async (file) => {
     setUploading(true);
     const formData = new FormData();
     formData.append("media", file);
     try {
-      const response = await fetch(`/api/projects/${localProject.id}/media`, {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${localProject.id}/media`, {
         method: "POST",
         body: formData,
       });
       if (!response.ok) throw new Error("Media upload failed");
       const newMedia = await response.json();
-      setLocalMedia(prev => [...prev, newMedia]);
+      setLocalMedia((prev) => [...prev, newMedia]);
       alert("Media uploaded successfully!");
     } catch (err) {
       console.error(err);
@@ -80,7 +82,7 @@ const ProjectDetails = ({ userRole }) => {
   };
 
   const handleAddMedia = () => document.getElementById("mediaUploadInput").click();
-  const handleStatusChange = e => handleFieldChange("status", e.target.value);
+  const handleStatusChange = (e) => handleFieldChange("status", e.target.value);
 
   const handleAddReport = async (file) => {
     setReportUploading(true);
@@ -91,7 +93,7 @@ const ProjectDetails = ({ userRole }) => {
     formData.append("status", localProject.status);
 
     try {
-      const response = await fetch(`/api/projects/${localProject.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${localProject.id}`, {
         method: "PUT",
         body: formData,
       });
@@ -119,7 +121,7 @@ const ProjectDetails = ({ userRole }) => {
     if (!window.confirm("Are you sure you want to delete this report?")) return;
 
     try {
-      const response = await fetch(`/api/projects/${localProject.id}/reports/${reportId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${localProject.id}/reports/${reportId}`, {
         method: "DELETE",
       });
 
@@ -147,7 +149,7 @@ const ProjectDetails = ({ userRole }) => {
     if (!window.confirm("Are you sure you want to update this project?")) return;
 
     try {
-      const response = await fetch(`/api/projects/${localProject.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${localProject.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -173,33 +175,41 @@ const ProjectDetails = ({ userRole }) => {
   };
 
   const handleDeleteProject = async () => {
+    if (!localProject?.id) {
+      alert("Project ID is missing. Please refresh the page and try again.");
+      return;
+    }
+
     if (!window.confirm("Are you sure you want to delete this project?")) return;
+
     try {
-      const response = await fetch(`/api/projects/${localProject.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${localProject.id}`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error();
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to delete project");
+      }
+
       alert("Project deleted successfully!");
       navigate(userRole === "mp" ? "/mp-dashboard" : "/public-dashboard");
     } catch (err) {
-      console.error(err);
-      alert("Failed to delete project.");
+      console.error("Error deleting project:", err);
+      alert("Failed to delete project. Please try again.");
     }
   };
 
-  const handleDeleteMedia = async publicId => {
+  const handleDeleteMedia = async (publicId) => {
     if (!window.confirm("Are you sure you want to delete this media?")) return;
     try {
-      const response = await fetch(
-        `/api/projects/${localProject.id}/media`,
-        {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ public_id: publicId }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/projects/${localProject.id}/media`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ public_id: publicId }),
+      });
       if (!response.ok) throw new Error("Failed to delete media");
-      setLocalMedia(prev => prev.filter(m => m.public_id !== publicId));
+      setLocalMedia((prev) => prev.filter((m) => m.public_id !== publicId));
       alert("Media deleted successfully!");
     } catch (err) {
       console.error("Error deleting media:", err);
@@ -217,7 +227,7 @@ const ProjectDetails = ({ userRole }) => {
         type="file"
         id="mediaUploadInput"
         style={{ display: "none" }}
-        onChange={e => handleFileUpload(e.target.files[0])}
+        onChange={(e) => handleFileUpload(e.target.files[0])}
       />
 
       <div className="header">
@@ -231,7 +241,9 @@ const ProjectDetails = ({ userRole }) => {
             </select>
           </div>
         ) : (
-          <p>Status: <strong>{localProject.status}</strong></p>
+          <p>
+            Status: <strong>{localProject.status}</strong>
+          </p>
         )}
       </div>
 
@@ -240,7 +252,7 @@ const ProjectDetails = ({ userRole }) => {
         {editMode && userRole === "mp" ? (
           <textarea
             value={localProject.description}
-            onChange={e => handleFieldChange("description", e.target.value)}
+            onChange={(e) => handleFieldChange("description", e.target.value)}
           />
         ) : (
           <p>{localProject.description}</p>
@@ -269,7 +281,7 @@ const ProjectDetails = ({ userRole }) => {
                     <textarea
                       placeholder="Comment..."
                       value={mediaComments[idx] ?? media.comment}
-                      onChange={e => handleCommentChange(idx, e.target.value)}
+                      onChange={(e) => handleCommentChange(idx, e.target.value)}
                     />
                     <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
                       <button className="action-btn" onClick={() => saveComment(idx)}>
@@ -302,10 +314,10 @@ const ProjectDetails = ({ userRole }) => {
       <div className="project-report">
         <h2>Project Reports</h2>
         {localProject.reports.length > 0 ? (
-          localProject.reports.map(report => (
+          localProject.reports.map((report) => (
             <div key={report.id} className="report-item">
               <a
-                href={`/api/projects/${localProject.id}/reports/${report.id}/download`}
+                href={`${API_BASE_URL}/api/projects/${localProject.id}/reports/${report.id}/download`}
                 download={report.fileName}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -339,7 +351,7 @@ const ProjectDetails = ({ userRole }) => {
               id="reportUploadInput"
               accept="application/pdf"
               style={{ display: "none" }}
-              onChange={e => {
+              onChange={(e) => {
                 const file = e.target.files[0];
                 if (file && file.type === "application/pdf") {
                   handleAddReport(file);
