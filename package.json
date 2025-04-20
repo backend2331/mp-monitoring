@@ -1,7 +1,7 @@
 {
   "name": "mp-monitoring",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "start": "concurrently \"npm run dev --prefix backend\" \"npm start --prefix frontend\""
   },
