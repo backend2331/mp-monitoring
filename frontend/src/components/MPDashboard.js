@@ -13,7 +13,7 @@ const MPDashboard = () => {
   useEffect(() => {
     async function fetchProjects() {
       try {
-        const response = await fetch("/api/projects"); // Replaced hardcoded localhost with a relative URL
+        const response = await fetch("/api/projects");
         if (!response.ok) {
           throw new Error(`Network response was not ok: ${response.statusText}`);
         }
@@ -22,7 +22,7 @@ const MPDashboard = () => {
           throw new Error("Expected an array of projects");
         }
         setProjects(data);
-        setFilteredProjects(data); // initialize
+        setFilteredProjects(data);
       } catch (err) {
         console.error("Error fetching projects:", err);
         setError(err.message);
@@ -44,59 +44,70 @@ const MPDashboard = () => {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className="container">
-      <div className="header">
-        <h1>MP Monitoring Dashboard</h1>
+    <div style={{ overflowX: "hidden" }}>
+      <div className="container">
+        <div className="header">
+          <h1>MP Monitoring Dashboard</h1>
 
-        {/* Use the new CSS class for responsive control buttons */}
-        <div className="dashboard-controls">
-          <input
-            type="text"
-            placeholder="Search by project title"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+          {/* Dashboard controls with better wrapping on mobile */}
+          <div
+            className="dashboard-controls"
             style={{
-              padding: "8px",
-              width: "250px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
+              flexWrap: "wrap",
+              overflowX: "auto", // just in case
+              gap: "10px",
+              marginBottom: "16px",
             }}
-          />
-          <button className="action-btn" onClick={handleSearch}>
-            Search
-          </button>
-          <button
-            className="action-btn create-btn"
-            onClick={() => navigate("/create-project")}
           >
-            Create Project
-          </button>
+            <input
+              type="text"
+              placeholder="Search by project title"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                padding: "8px",
+                minWidth: "200px",
+                flexGrow: 1,
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+              }}
+            />
+            <button className="action-btn" onClick={handleSearch}>
+              Search
+            </button>
+            <button
+              className="action-btn create-btn"
+              onClick={() => navigate("/create-project")}
+            >
+              Create Project
+            </button>
+          </div>
         </div>
+
+        <p>Total Projects: {filteredProjects.length}</p>
+
+        {filteredProjects.length === 0 ? (
+          <p>No projects available.</p>
+        ) : (
+          <ul className="project-list">
+            {filteredProjects.map((project) => (
+              <li key={project.id} className="project-item">
+                <h3 className="project-number">Project ID: {project.id}</h3>
+                <h3 className="project-title">{project.title}</h3>
+                <p className="project-description">{project.description}</p>
+                <div className="button-group">
+                  <button
+                    className="action-btn"
+                    onClick={() => navigate(`/mp-project/${project.id}`)}
+                  >
+                    View Project
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-
-      <p>Total Projects: {filteredProjects.length}</p>
-
-      {filteredProjects.length === 0 ? (
-        <p>No projects available.</p>
-      ) : (
-        <ul className="project-list">
-          {filteredProjects.map((project) => (
-            <li key={project.id} className="project-item">
-              <h3 className="project-number">Project ID: {project.id}</h3>
-              <h3 className="project-title">{project.title}</h3>
-              <p className="project-description">{project.description}</p>
-              <div className="button-group">
-                <button
-                  className="action-btn"
-                  onClick={() => navigate(`/mp-project/${project.id}`)}
-                >
-                  View Project
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 };

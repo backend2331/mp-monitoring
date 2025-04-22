@@ -44,74 +44,83 @@ const PublicDashboard = () => {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className="container">
-      <div className="header">
-        <h1>Public Dashboard</h1>
-        {/* Updated the search container to wrap on small screens */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "10px",
-            margin: "10px 0",
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Search by project title"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+    <div style={{ overflowX: "hidden" }}>
+      <div className="container">
+        <div className="header">
+          <h1>Public Dashboard</h1>
+
+          <div
             style={{
-              padding: "8px",
-              width: "250px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "10px",
+              margin: "10px 0",
             }}
-          />
-          <button className="action-btn" onClick={handleSearch}>
-            Search
-          </button>
+          >
+            <p style={{ margin: 0, fontWeight: "bold", minWidth: "120px" }}>
+              Total Projects: {filteredProjects.length}
+            </p>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              <input
+                type="text"
+                placeholder="Search by project title"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  padding: "8px",
+                  width: "250px",
+                  maxWidth: "100%",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                }}
+              />
+              <button className="action-btn" onClick={handleSearch}>
+                Search
+              </button>
+            </div>
+          </div>
         </div>
-        <p>Total Projects: {filteredProjects.length}</p>
+
+        {filteredProjects.length === 0 ? (
+          <p>No projects available.</p>
+        ) : (
+          <ul className="project-list">
+            {filteredProjects.map((project) => {
+              const firstImage = project.media?.find((m) => m.type === "image");
+
+              return (
+                <li key={project.id} className="project-item">
+                  <h3 className="project-number">Project ID: {project.id}</h3>
+                  <h3 className="project-title">{project.title}</h3>
+                  <p className="project-description">{project.description}</p>
+
+                  <div className="project-media">
+                    {firstImage ? (
+                      <div className="media-item">
+                        <img src={firstImage.url} alt="Project media" />
+                      </div>
+                    ) : (
+                      <p>No image available for this project.</p>
+                    )}
+                  </div>
+
+                  <div className="button-group">
+                    <button
+                      className="action-btn"
+                      onClick={() => navigate(`/project/${project.id}`)}
+                    >
+                      View Project
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
-
-      {filteredProjects.length === 0 ? (
-        <p>No projects available.</p>
-      ) : (
-        <ul className="project-list">
-          {filteredProjects.map((project) => {
-            const firstImage = project.media?.find((m) => m.type === "image");
-
-            return (
-              <li key={project.id} className="project-item">
-                <h3 className="project-number">Project ID: {project.id}</h3>
-                <h3 className="project-title">{project.title}</h3>
-                <p className="project-description">{project.description}</p>
-
-                <div className="project-media">
-                  {firstImage ? (
-                    <div className="media-item">
-                      <img src={firstImage.url} alt="Project media" />
-                    </div>
-                  ) : (
-                    <p>No image available for this project.</p>
-                  )}
-                </div>
-
-                <div className="button-group">
-                  <button
-                    className="action-btn"
-                    onClick={() => navigate(`/project/${project.id}`)}
-                  >
-                    View Project
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
     </div>
   );
 };
