@@ -223,7 +223,7 @@ h1 {
 }
 
 .create-btn {
-  margin-left: auto; /* Pushes button to the end on wider screens */
+  margin-left: auto;
 }
 
 /* On small screens, remove margin-left so buttons appear centered */
@@ -267,8 +267,33 @@ h1 {
   }
 }
 
+/* Delete Button */
 .delete-btn {
   background-color: red;
   border: 1px solid red;
   color: white;
+}
+
+/* Mobile-specific fixes for dashboard */
+@media (max-width: 600px) {
+  /* Ensure project count remains visible and spans full width */
+  .project-count {
+    display: block;
+    width: 100%;
+    text-align: left;
+    margin-bottom: 10px;
+  }
+
+  /* Stack controls vertically */
+  .dashboard-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Make search input and button full-width */
+  .dashboard-controls input[type="text"],
+  .dashboard-controls button {
+    width: 100%;
+    margin-bottom: 10px;
+  }
 }
