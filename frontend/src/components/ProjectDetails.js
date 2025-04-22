@@ -272,7 +272,14 @@ const ProjectDetails = ({ userRole }) => {
               {media.type === "image" ? (
                 <img src={media.url} alt="" />
               ) : (
-                <video src={media.url} controls />
+                <video
+  src={media.url}
+  controls
+  poster={media.url.replace(/\.mp4$/, ".jpg")}
+  preload="metadata"
+  playsInline
+/>
+
               )}
               <div className="media-comment">
                 <p>Comment: {media.comment || "No comment"}</p>

@@ -23,11 +23,14 @@ app.use(
   })
 );
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+// Rate limiter for API routes
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 1000, // 1000 requests per IP per minute
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-app.use(limiter);
+app.use("/api", apiLimiter); // Apply limiter to API only
 
 const corsOptions = {
   origin: process.env.FRONTEND_URL || "http://localhost:3000", // Allow only your frontend's URL
@@ -38,7 +41,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Trust proxy
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 // Database Connection
 const pool = new Pool({
