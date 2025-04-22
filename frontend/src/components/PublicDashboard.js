@@ -46,43 +46,42 @@ const PublicDashboard = () => {
   return (
     <div style={{ overflowX: "hidden" }}>
       <div className="container">
-        <div className="header">
-          <h1>Public Dashboard</h1>
+      <div className="header">
+  <h1>Public Dashboard</h1>
 
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "10px",
-              margin: "10px 0",
-            }}
-          >
-            <p style={{ margin: 0, fontWeight: "bold", minWidth: "120px" }}>
-              Total Projects: {filteredProjects.length}
-            </p>
+  {/* Total Projects Count Below the Heading */}
+  <p style={{ fontWeight: "bold", margin: "10px 0" }}>
+    Total Projects: {filteredProjects.length}
+  </p>
 
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              <input
-                type="text"
-                placeholder="Search by project title"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  padding: "8px",
-                  width: "250px",
-                  maxWidth: "100%",
-                  border: "1px solid #ccc",
-                  borderRadius: "4px",
-                }}
-              />
-              <button className="action-btn" onClick={handleSearch}>
-                Search
-              </button>
-            </div>
-          </div>
-        </div>
+  {/* Search Section */}
+  <div
+    style={{
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "8px",
+      marginBottom: "16px",
+    }}
+  >
+    <input
+      type="text"
+      placeholder="Search by project title"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      style={{
+        padding: "8px",
+        width: "250px",
+        maxWidth: "100%",
+        border: "1px solid #ccc",
+        borderRadius: "4px",
+      }}
+    />
+    <button className="action-btn" onClick={handleSearch}>
+      Search
+    </button>
+  </div>
+</div>
+
 
         {filteredProjects.length === 0 ? (
           <p>No projects available.</p>
