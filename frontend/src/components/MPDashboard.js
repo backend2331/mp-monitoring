@@ -10,17 +10,29 @@ const MPDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
+  // Redirect if not logged in
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      navigate("/", { replace: true }); // Redirect to landing page
+    }
+  }, [navigate]);
+
   useEffect(() => {
     async function fetchProjects() {
       try {
-        const response = await fetch("/api/projects");
+        const token = localStorage.getItem("authToken");
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/mp-dashboard`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
         if (!response.ok) {
           throw new Error(`Network response was not ok: ${response.statusText}`);
         }
+
         const data = await response.json();
-        if (!Array.isArray(data)) {
-          throw new Error("Expected an array of projects");
-        }
         setProjects(data);
         setFilteredProjects(data);
       } catch (err) {
@@ -44,8 +56,7 @@ const MPDashboard = () => {
     const token = localStorage.getItem("authToken");
 
     try {
-      // Call the logout endpoint
-      await fetch("/api/auth/logout", {
+      await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/logout`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -57,7 +68,7 @@ const MPDashboard = () => {
 
     // Clear the token and redirect to the landing page
     localStorage.removeItem("authToken");
-    navigate("/");
+    navigate("/", { replace: true }); // Replace history to prevent going back
   };
 
   if (loading) return <div>Loading projects...</div>;

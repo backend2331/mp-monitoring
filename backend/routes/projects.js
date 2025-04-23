@@ -62,15 +62,15 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Fetch all projects
+// Fetch all projects (Public Access)
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM projects ORDER BY id ASC");
-    const projects = result.rows.map(project => ({
+    const projects = result.rows.map((project) => ({
       ...project,
-      media: [...(project.image_urls || []), ...(project.video_urls || [])]
+      media: [...(project.image_urls || []), ...(project.video_urls || [])],
     }));
-    res.json(projects);
+    res.json(projects); // Publicly accessible
   } catch (error) {
     console.error("Fetch all projects error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -358,6 +358,17 @@ router.get("/:id/reports/:reportId/download", async (req, res) => {
     response.data.pipe(res);
   } catch (error) {
     console.error("Download error:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Fetch MP-specific projects (Protected)
+router.get("/mp-dashboard", authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM projects WHERE mp_id = $1", [req.user.id]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Fetch MP projects error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
