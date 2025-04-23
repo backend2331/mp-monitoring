@@ -8,24 +8,28 @@ const MPLogin = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-  
+    e.preventDefault(); // Prevent the form from refreshing the page
+
     try {
-      const response = await fetch("/api/auth/login", {
+      // Send login credentials to the backend
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password }), // Send username and password
       });
-  
-      const data = await response.json();
-  
+
+      const data = await response.json(); // Parse the response
+
       if (response.ok) {
-        // Optional: save user/token if needed
-        localStorage.setItem("user", JSON.stringify(data.user));
+        // Store the token in localStorage
+        localStorage.setItem("authToken", data.token);
+
+        // Redirect the user to the MP Dashboard
         navigate("/mp-dashboard");
       } else {
+        // Handle login errors (e.g., invalid credentials)
         setError(data.message || "Invalid username or password");
       }
     } catch (err) {
@@ -33,7 +37,6 @@ const MPLogin = () => {
       setError("An error occurred. Please try again later.");
     }
   };
-  
 
   return (
     <div style={styles.container}>

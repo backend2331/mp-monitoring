@@ -51,6 +51,7 @@ router.post("/register", authMiddleware, async (req, res) => {
 // Returns a JWT token along with user details if successful.
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
+
   if (!username || !password) {
     return res.status(400).json({ message: "Username and password are required" });
   }
@@ -67,20 +68,22 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid username or password" });
     }
 
+    // Generate a token
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
+    // Return the token and user details
     res.json({
       message: "Login successful",
       token,
-      user: { id: user.id, username: user.username, role: user.role }
+      user: { id: user.id, username: user.username, role: user.role },
     });
   } catch (error) {
     console.error("Login Error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

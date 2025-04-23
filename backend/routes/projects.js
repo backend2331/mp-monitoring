@@ -34,8 +34,7 @@ const fileFilter = (req, file, cb) => {
 };
 const uploadMemory = multer({ storage: multer.memoryStorage(), fileFilter });
 
-// Apply authentication middleware
-router.use(authMiddleware);
+
 
 // Create a new project
 router.post("/", async (req, res) => {
