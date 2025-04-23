@@ -5,6 +5,7 @@ const fs = require("fs");
 const router = express.Router();
 const { Pool } = require("pg");
 const axios = require("axios");
+const authMiddleware = require("../middleware/auth");
 
 const cloudinary = require("cloudinary").v2;
 cloudinary.config({
@@ -32,6 +33,9 @@ const fileFilter = (req, file, cb) => {
   }
 };
 const uploadMemory = multer({ storage: multer.memoryStorage(), fileFilter });
+
+// Apply authentication middleware
+router.use(authMiddleware);
 
 // Create a new project
 router.post("/", async (req, res) => {

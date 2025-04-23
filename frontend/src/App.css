@@ -9,7 +9,9 @@ body {
 
 /* Container */
 .container {
+  width: 100%;              /* fill viewport down to max-width */
   max-width: 900px;
+  box-sizing: border-box;   /* include padding/border in width */
   margin: 30px auto;
   padding: 20px;
   background: rgba(255, 255, 255, 0.9);
@@ -17,6 +19,7 @@ body {
   border-radius: 12px;
   overflow: hidden;
 }
+
 
 /* Header */
 .header {

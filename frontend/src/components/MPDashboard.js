@@ -40,52 +40,97 @@ const MPDashboard = () => {
     setFilteredProjects(filtered);
   };
 
+  const handleLogout = async () => {
+    const token = localStorage.getItem("authToken");
+
+    try {
+      // Call the logout endpoint
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+
+    // Clear the token and redirect to the landing page
+    localStorage.removeItem("authToken");
+    navigate("/");
+  };
+
   if (loading) return <div>Loading projects...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
     <div style={{ overflowX: "hidden" }}>
       <div className="container">
+        {/* Header Section */}
         <div className="header">
           <h1>MP Monitoring Dashboard</h1>
-
-          {/* Dashboard controls with better wrapping on mobile */}
-          <div
-            className="dashboard-controls"
-            style={{
-              flexWrap: "wrap",
-              overflowX: "auto", // just in case
-              gap: "10px",
-              marginBottom: "16px",
-            }}
-          >
-            <input
-              type="text"
-              placeholder="Search by project title"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                padding: "8px",
-                minWidth: "200px",
-                flexGrow: 1,
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-              }}
-            />
-            <button className="action-btn" onClick={handleSearch}>
-              Search
-            </button>
-            <button
-              className="action-btn create-btn"
-              onClick={() => navigate("/create-project")}
-            >
-              Create Project
-            </button>
-          </div>
         </div>
 
-        <p>Total Projects: {filteredProjects.length}</p>
+        {/* Logout Button */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginBottom: "16px",
+          }}
+        >
+          <button
+            className="action-btn"
+            style={{
+              backgroundColor: "red",
+              borderColor: "red",
+              color: "white",
+              padding: "10px 16px",
+              borderRadius: "4px",
+              fontSize: "16px",
+            }}
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
 
+        {/* Dashboard Controls */}
+        <div
+          className="dashboard-controls"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "10px",
+            marginBottom: "16px",
+          }}
+        >
+          <input
+            type="text"
+            placeholder="Search by project title"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: "8px",
+              minWidth: "200px",
+              flexGrow: 1,
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+            }}
+          />
+          <button className="action-btn" onClick={handleSearch}>
+            Search
+          </button>
+          <button
+            className="action-btn create-btn"
+            onClick={() => navigate("/create-project")}
+          >
+            Create Project
+          </button>
+        </div>
+
+        {/* Project List */}
+        <p>Total Projects: {filteredProjects.length}</p>
         {filteredProjects.length === 0 ? (
           <p>No projects available.</p>
         ) : (

@@ -1,5 +1,6 @@
 // routes/auth.js
 const express = require("express");
+const redis = require("redis");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -8,6 +9,8 @@ const authMiddleware = require("../middleware/auth"); // Your existing auth midd
 require("dotenv").config();
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const client = redis.createClient(); // Create Redis client
+client.connect(); // Connect to Redis
 
 // 🔐 User Registration (Admin-only)
 // This endpoint assumes that only an admin can register new users.
@@ -70,6 +73,25 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Logout Route
+router.post("/logout", async (req, res) => {
+  const token = req.header("Authorization")?.split(" ")[1];
+
+  if (!token) {
+    return res.status(400).json({ message: "No token provided" });
+  }
+
+  try {
+    // Blacklist the token in Redis with an expiration time (e.g., 1 hour)
+    await client.setEx(token, 3600, "blacklisted"); // Expire after 1 hour (same as token lifespan)
+
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Error blacklisting token:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
