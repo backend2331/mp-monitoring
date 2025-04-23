@@ -23,6 +23,12 @@ app.use(
   })
 );
 
+// Prevent caching
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
+
 // Rate limiter for API routes
 const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute

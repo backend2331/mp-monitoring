@@ -18,6 +18,15 @@ const ProjectDetails = ({ userRole }) => {
   const [uploading, setUploading] = useState(false);
   const [reportUploading, setReportUploading] = useState(false);
 
+  useEffect(() => {
+    if (userRole === "mp") { // Only enforce login check for MPs
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        navigate("/", { replace: true }); // Redirect to landing page if not logged in
+      }
+    }
+  }, [navigate, userRole]);
+
   const fetchProjectDetails = useCallback(async () => {
     setLoading(true); // Start loading
     try {
@@ -273,13 +282,12 @@ const ProjectDetails = ({ userRole }) => {
                 <img src={media.url} alt="" />
               ) : (
                 <video
-  src={media.url}
-  controls
-  poster={media.url.replace(/\.mp4$/, ".jpg")}
-  preload="metadata"
-  playsInline
-/>
-
+                  src={media.url}
+                  controls
+                  poster={media.url.replace(/\.mp4$/, ".jpg")}
+                  preload="metadata"
+                  playsInline
+                />
               )}
               <div className="media-comment">
                 <p>Comment: {media.comment || "No comment"}</p>
