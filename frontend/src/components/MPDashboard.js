@@ -22,7 +22,7 @@ const MPDashboard = () => {
     async function fetchProjects() {
       try {
         const token = localStorage.getItem("authToken");
-        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/mp-dashboard`, {
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/projects`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -30,6 +30,11 @@ const MPDashboard = () => {
 
         if (!response.ok) {
           throw new Error(`Network response was not ok: ${response.statusText}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Expected JSON response but received something else");
         }
 
         const data = await response.json();
