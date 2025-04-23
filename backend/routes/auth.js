@@ -6,11 +6,19 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
 const authMiddleware = require("../middleware/auth"); // Your existing auth middleware
-require("dotenv").config();
+require("dotenv").config(); // Load environment variables
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const client = redis.createClient(); // Create Redis client
-client.connect(); // Connect to Redis
+
+// Configure Redis client
+const client = redis.createClient({
+  url: process.env.REDIS_URL, // Use the Redis URL from the environment
+});
+
+// Connect to Redis
+client.connect().catch((err) => {
+  console.error("Redis connection error:", err);
+});
 
 // 🔐 User Registration (Admin-only)
 // This endpoint assumes that only an admin can register new users.
@@ -86,7 +94,7 @@ router.post("/logout", async (req, res) => {
 
   try {
     // Blacklist the token in Redis with an expiration time (e.g., 1 hour)
-    await client.setEx(token, 3600, "blacklisted"); // Expire after 1 hour (same as token lifespan)
+    await client.setEx(token, 3600, "blacklisted"); // Expire after 1 hour
 
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {

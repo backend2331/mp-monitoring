@@ -1,9 +1,16 @@
 const jwt = require("jsonwebtoken");
 const redis = require("redis");
-require("dotenv").config();
+require("dotenv").config(); // Load environment variables
 
-const client = redis.createClient(); // Create Redis client
-client.connect(); // Connect to Redis
+// Configure Redis client to use the REDIS_URL
+const client = redis.createClient({
+  url: process.env.REDIS_URL, // Use the Redis URL from the environment
+});
+
+// Connect to Redis
+client.connect().catch((err) => {
+  console.error("Redis connection error:", err);
+});
 
 module.exports = async function (req, res, next) {
   const token = req.header("Authorization")?.split(" ")[1];
@@ -24,6 +31,7 @@ module.exports = async function (req, res, next) {
     req.user = decoded; // Attach user info to the request
     next(); // Proceed to the next middleware or route handler
   } catch (error) {
+    console.error("Authentication error:", error);
     res.status(400).json({ message: "Invalid token" });
   }
 };
