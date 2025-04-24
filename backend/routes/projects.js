@@ -24,15 +24,24 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const allowedMimes = ["application/pdf", "image/jpeg", "image/png", "image/gif", "video/mp4", "video/avi"];
 const fileFilter = (req, file, cb) => {
-  if (allowedMimes.includes(file.mimetype)) {
+  const [type] = file.mimetype.split("/");
+  if (
+    ["image", "video"].includes(type) ||
+    file.mimetype === "application/pdf"
+  ) {
     cb(null, true);
   } else {
-    cb(new Error("Invalid file type. Only PDF and image files are allowed."));
+    cb(new Error("Invalid file type or size. Only images, videos, and PDFs up to 1 GB are allowed."));
   }
 };
-const uploadMemory = multer({ storage: multer.memoryStorage(), fileFilter });
+
+const uploadMemory = multer({
+  storage: multer.memoryStorage(),
+  fileFilter,
+  limits: { fileSize: 1 * 1024 * 1024 * 1024 }, // ← now 1 GB
+});
+
 
 
 
