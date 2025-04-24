@@ -284,7 +284,7 @@ const ProjectDetails = ({ userRole }) => {
                 <video
                   src={media.url}
                   controls
-                  poster={media.url.replace(/\.mp4$/, ".jpg")}
+                  poster={media.url.replace(/\.\w+$/, ".jpg")}
                   preload="metadata"
                   playsInline
                 />
