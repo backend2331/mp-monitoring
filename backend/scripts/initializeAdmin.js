@@ -21,7 +21,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       "INSERT INTO users (username, password, role) VALUES ($1, $2, $3) ON CONFLICT (username) DO NOTHING",
       [username, hashedPassword, role]
     );
-    console.log("Admin user initialized successfully.");
+    console.log("✅ Admin user initialized successfully.");
   } catch (error) {
     console.error("Error initializing admin user:", error);
   } finally {

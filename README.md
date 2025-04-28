@@ -1,122 +1,96 @@
-# MP Monitoring
+MP Monitoring
+MP Monitoring is a full-stack web application designed to manage and monitor projects. It features a React frontend and a Node.js/Express backend with a PostgreSQL database.
 
-MP Monitoring is a full-stack web application designed to manage and monitor projects. It includes a **React frontend** and a **Node.js/Express backend** with a PostgreSQL database.
+Features
+Frontend
+Built with React and React Router.
+User-friendly dashboards for MPs and public users.
+Project creation, search, and detailed views.
+Role-based access for MPs and public visitors.
 
----
+Backend
+Built with Node.js, Express, and PostgreSQL.
+RESTful API for managing projects, media, and authentication.
+File uploads for media and reports using Cloudinary.
+Secure authentication with JWT and Redis for token blacklisting.
 
-## Features
-- **Frontend**:
-  - Built with React.
-  - User-friendly interface for managing and viewing projects.
-  - Routes for dashboards, project creation, and project details.
+Installation
+Prerequisites
+Node.js (v18.x or higher)
+PostgreSQL database
+Cloudinary account for media storage
 
-- **Backend**:
-  - Built with Node.js and Express.
-  - RESTful API for managing projects and authentication.
-  - Serves the React app and handles file uploads.
-
-- **Database**:
-  - PostgreSQL for storing project and user data.
-
----
-
-## Folder Structure
-mp-monitoring/ ├── backend/ │ ├── server.js # Backend entry point │ ├── routes/ # API routes │ │ ├── auth.js │ │ ├── projects.js │ ├── uploads/ # Uploaded files │ ├── package.json # Backend dependencies │ ├── .env # Environment variables (not pushed to GitHub) │ └── other backend files ├── frontend/ │ ├── build/ # React production build (generated after npm run build) │ ├── src/ # React source code │ ├── package.json # Frontend dependencies │ └── .env # Frontend environment variables (optional) ├── .gitignore # Ignored files and folders ├── README.md # Project documentation └── package.json # Root-level scripts and dependencies
-
-
----
-
-## Installation
-
-### 1. Clone the Repository
-```bash
+1. Clone the Repository
 git clone https://github.com/<your-username>/mp-monitoring.git
 cd mp-monitoring
 
-2. Set Up the Backend
+2. Backend Setup
 Navigate to the backend folder:
 cd backend
 
 Install dependencies:
 npm install
 
-Create a .env file in the backend folder and add the following:
+Create a .env file in the backend folder:
+PORT=5000
 DATABASE_URL=your_postgresql_connection_string
+JWT_SECRET=your_jwt_secret
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+REDIS_URL=your_redis_url
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your_admin_password
+ADMIN_ROLE=admin
 
-3. Set Up the Frontend
+Start the backend server:
+npm start
+
+3. Frontend Setup
 Navigate to the frontend folder:
 cd ../frontend
 
 Install dependencies:
 npm install
 
-Build the React app:
-npm run build
-
-Running the Application Locally
-Navigate to the root directory:
-cd ..
-
-Start the application:
+Start the React development server:
 npm start
 
-This will:
+Usage
+Open your browser and navigate to:
 
-Start the backend server.
-Serve the React app.
-Open your browser and visit:
-http://localhost:5000
+Frontend: http://localhost:3000
+Backend API: http://localhost:5000/api
+Use the admin credentials (set in .env) to log in and manage projects.
 
 Deployment
 Deploying to Render
 Push your code to GitHub.
+Create a Web Service on Render.
+Use the following commands:
 
-Create a Web Service on Render:
+  Build Command:
+    cd frontend && npm install && npm run build && cd ../backend && npm install
 
-Build Command:
-cd frontend && npm install && npm run build && cd ../backend && npm install
+  Start Command:
+    cd backend && node server.js
 
-Start Command:
-cd backend && node server.js
-
-Add the DATABASE_URL environment variable in Render.
-Deploy the service and access your app at the Render-provided URL.
-
-Environment Variables
-The following environment variables are required:
-
-Backend (backend/.env)
-DATABASE_URL=your_postgresql_connection_string
+Add the required environment variables in Render.
+Deploy and access your app at the Render-provided URL.
 
 API Endpoints
 Authentication
-POST /api/auth/login: User login.
-POST /api/auth/register: User registration.
+POST /api/auth/login - User login.
+POST /api/auth/logout - User logout.
 Projects
-GET /api/projects: Get all projects.
-POST /api/projects: Create a new project.
-GET /api/projects/:id: Get project details.
+GET /api/projects - Fetch all projects.
+POST /api/projects - Create a new project.
+GET /api/projects/:id - Fetch project details.
+PUT /api/projects/:id - Update a project.
+DELETE /api/projects/:id - Delete a project.
 Technologies Used
 Frontend: React, React Router.
-Backend: Node.js, Express, Multer.
-Database: PostgreSQL.
+Backend: Node.js, Express, PostgreSQL, Cloudinary, Redis.
 Deployment: Render.
 License
 This project is licensed under the ISC License.
-
-
----
-
-### **How to Use This**
-1. Save this content in a file named `README.md` in the root of your project.
-2. Replace `<your-username>` and `your_postgresql_connection_string` with your actual values.
-3. Push the updated `README.md` to GitHub.
-
-Let me know if you need further assistance!---
-
-### **How to Use This**
-1. Save this content in a file named `README.md` in the root of your project.
-2. Replace `<your-username>` and `your_postgresql_connection_string` with your actual values.
-3. Push the updated `README.md` to GitHub.
-
-Let me know if you need further assistance!

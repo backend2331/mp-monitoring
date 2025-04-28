@@ -4,32 +4,28 @@ import { useNavigate } from "react-router-dom";
 const MPLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault(); // Prevent the form from refreshing the page
+    e.preventDefault();
 
     try {
-      // Send login credentials to the backend
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }), // Send username and password
+        body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json(); // Parse the response
+      const data = await response.json();
 
       if (response.ok) {
-        // Store the token in localStorage
         localStorage.setItem("authToken", data.token);
-
-        // Redirect the user to the MP Dashboard
         navigate("/mp-dashboard");
       } else {
-        // Handle login errors (e.g., invalid credentials)
         setError(data.message || "Invalid username or password");
       }
     } catch (err) {
@@ -55,13 +51,22 @@ const MPLogin = () => {
         </div>
         <div>
           <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={styles.input}
-          />
+          <div style={styles.passwordContainer}>
+            <input
+              type={showPassword ? "text" : "password"} // Toggle input type
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={styles.input}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)} // Toggle visibility
+              style={styles.toggleButton}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
         </div>
         <button type="submit" style={styles.button}>Login</button>
       </form>
@@ -74,7 +79,9 @@ const styles = {
   form: { display: "flex", flexDirection: "column", gap: "10px" },
   input: { width: "100%", padding: "8px", fontSize: "16px" },
   button: { backgroundColor: "#007BFF", color: "white", padding: "10px", border: "none", cursor: "pointer", width: "321px" },
-  error: { color: "red" }
+  error: { color: "red" },
+  passwordContainer: { display: "flex", alignItems: "center", gap: "5px" },
+  toggleButton: { background: "none", border: "none", color: "#007BFF", cursor: "pointer", fontSize: "14px" },
 };
 
 export default MPLogin;
