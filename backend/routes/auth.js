@@ -52,7 +52,10 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+    const normalizedUsername = username.toLowerCase();
+
+    const result = await pool.query("SELECT * FROM users WHERE username = $1",[normalizedUsername]);
+
     if (result.rows.length === 0) {
       return res.status(401).json({ message: "Invalid username or password" });
     }
