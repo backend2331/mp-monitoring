@@ -10,9 +10,13 @@ require("dotenv").config(); // Load environment variables
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// Configure Redis client
+// ✅ Updated Redis client config for Upstash TLS
 const client = redis.createClient({
-  url: process.env.REDIS_URL, // Use the Redis URL from the environment
+  url: process.env.REDIS_URL,
+  socket: {
+    tls: true,
+    rejectUnauthorized: false, // optional: helps with TLS certs on some cloud platforms like Render
+  },
 });
 
 // Connect to Redis
@@ -21,7 +25,6 @@ client.connect().catch((err) => {
 });
 
 // 🔐 User Registration (Admin-only)
-// This endpoint assumes that only an admin can register new users.
 router.post("/register", authMiddleware, async (req, res) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ message: "Only admins can register new users" });
@@ -47,8 +50,6 @@ router.post("/register", authMiddleware, async (req, res) => {
 });
 
 // 🔑 Login Route
-// Expects { username, password } in the request body
-// Returns a JWT token along with user details if successful.
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -68,14 +69,12 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid username or password" });
     }
 
-    // Generate a token
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    // Return the token and user details
     res.json({
       message: "Login successful",
       token,
@@ -87,7 +86,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Logout Route
+// 🚪 Logout Route
 router.post("/logout", async (req, res) => {
   const token = req.header("Authorization")?.split(" ")[1];
 
@@ -96,8 +95,8 @@ router.post("/logout", async (req, res) => {
   }
 
   try {
-    // Blacklist the token in Redis with an expiration time (e.g., 1 hour)
-    await client.setEx(token, 3600, "blacklisted"); // Expire after 1 hour
+    // Blacklist the token in Redis with a 1 hour expiration
+    await client.setEx(token, 3600, "blacklisted");
 
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
