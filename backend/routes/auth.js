@@ -11,22 +11,14 @@ require("dotenv").config(); // Load environment variables
 // PostgreSQL pool
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// Redis client configured for Upstash TLS
-const client = redis.createClient({
-  url: process.env.REDIS_URL,
-  socket: {
-    tls: true,
-    rejectUnauthorized: false, // helps with TLS certs on some cloud hosts
-  },
-});
+// ── Redis client using rediss:// URL scheme ───────────────────────────────────
+const client = redis.createClient({ url: process.env.REDIS_URL });
 
-// Connect to Redis, log success or error
+client.on("error", (err) => console.error("Redis error:", err));
 client.connect()
-  .then(() => console.log("✅ Connected to Upstash Redis"))
-  .catch((err) => {
-    console.error("❌ Redis connection error:", err);
-    // Optionally: process.exit(1);
-  });
+  .then(() => console.log("✅ Connected via rediss://"))
+  .catch((err) => console.error("❌ Connect failed:", err));
+// ───────────────────────────────────────────────────────────────────────────────
 
 // 🔐 User Registration (Admin-only)
 router.post("/register", authMiddleware, async (req, res) => {
