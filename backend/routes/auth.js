@@ -8,21 +8,25 @@ const { Pool } = require("pg");
 const authMiddleware = require("../middleware/auth"); // Your existing auth middleware
 require("dotenv").config(); // Load environment variables
 
+// PostgreSQL pool
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// ✅ Updated Redis client config for Upstash TLS
+// Redis client configured for Upstash TLS
 const client = redis.createClient({
   url: process.env.REDIS_URL,
   socket: {
     tls: true,
-    rejectUnauthorized: false, // optional: helps with TLS certs on some cloud platforms like Render
+    rejectUnauthorized: false, // helps with TLS certs on some cloud hosts
   },
 });
 
-// Connect to Redis
-client.connect().catch((err) => {
-  console.error("Redis connection error:", err);
-});
+// Connect to Redis, log success or error
+client.connect()
+  .then(() => console.log("✅ Connected to Upstash Redis"))
+  .catch((err) => {
+    console.error("❌ Redis connection error:", err);
+    // Optionally: process.exit(1);
+  });
 
 // 🔐 User Registration (Admin-only)
 router.post("/register", authMiddleware, async (req, res) => {
@@ -41,7 +45,6 @@ router.post("/register", authMiddleware, async (req, res) => {
       "INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id, username, role",
       [username, hashedPassword, role]
     );
-
     res.status(201).json({ message: "User registered", user: result.rows[0] });
   } catch (error) {
     console.error("Registration Error:", error);
@@ -52,7 +55,6 @@ router.post("/register", authMiddleware, async (req, res) => {
 // 🔑 Login Route
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
-
   if (!username || !password) {
     return res.status(400).json({ message: "Username and password are required" });
   }
@@ -89,7 +91,6 @@ router.post("/login", async (req, res) => {
 // 🚪 Logout Route
 router.post("/logout", async (req, res) => {
   const token = req.header("Authorization")?.split(" ")[1];
-
   if (!token) {
     return res.status(400).json({ message: "No token provided" });
   }
@@ -97,7 +98,6 @@ router.post("/logout", async (req, res) => {
   try {
     // Blacklist the token in Redis with a 1 hour expiration
     await client.setEx(token, 3600, "blacklisted");
-
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("Error blacklisting token:", error);
