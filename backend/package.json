@@ -4,6 +4,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "postinstall": "node scripts/initializeAdmin.js",
     "dev": "nodemon server.js"
   },
   "keywords": [],
