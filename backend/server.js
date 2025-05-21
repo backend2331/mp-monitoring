@@ -92,6 +92,41 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal server error" });
 });
 
+
+
+
+
+
+
+const bcrypt = require("bcrypt");
+
+(async () => {
+  const username = process.env.ADMIN_USERNAME;
+  const password = process.env.ADMIN_PASSWORD;
+  const role = process.env.ADMIN_ROLE;
+
+  if (!username || !password || !role) {
+    console.error("⚠️ Admin credentials are missing.");
+    return;
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  try {
+    await pool.query(
+      "INSERT INTO users (username, password, role) VALUES ($1, $2, $3) ON CONFLICT (username) DO NOTHING",
+      [username, hashedPassword, role]
+    );
+    console.log("✅ Admin user created or already exists.");
+  } catch (error) {
+    console.error("❌ Error creating admin:", error);
+  }
+})();
+
+
+
+
+
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
